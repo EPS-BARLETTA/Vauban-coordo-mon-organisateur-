@@ -3,331 +3,148 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f3f5f8">
 <title>Coordo</title>
 <style>
-:root{
-  --bg:#f4f6f8;--panel:#fff;--text:#162033;--muted:#6b7280;--line:#e5e7eb;
-  --accent:#2563eb;--danger:#dc2626;--warn:#d97706;--success:#15803d;
-  --shadow:0 12px 30px rgba(15,23,42,.07)
-}
-*{box-sizing:border-box}
-body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-button,input,select,textarea{font:inherit} button{cursor:pointer}
-.app{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
-.sidebar{background:#111827;color:#fff;padding:18px;display:flex;flex-direction:column;gap:14px}
-.brand{font-size:24px;font-weight:800}.brand small{display:block;font-size:11px;color:#94a3b8;margin-top:4px;text-transform:uppercase}
-.nav{display:flex;flex-direction:column;gap:6px}.nav button{border:0;background:transparent;color:#d1d5db;padding:10px 12px;border-radius:10px;text-align:left}.nav button.active,.nav button:hover{background:#1f2937;color:#fff}
-.nav .count{float:right;background:#374151;border-radius:999px;padding:1px 7px;font-size:11px}
-.sidebottom{margin-top:auto;display:flex;flex-direction:column;gap:8px}.sidebtn{border:1px solid #374151;background:#111827;color:#d1d5db;padding:9px 10px;border-radius:10px;text-align:left}
-.main{padding:24px}.page{display:none}.page.active{display:block}
-.btn{border:1px solid var(--line);background:#fff;padding:10px 13px;border-radius:10px}.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
-.hero{background:linear-gradient(135deg,#0f172a,#1f2937 62%,#2563eb 140%);color:#fff;border-radius:22px;padding:24px;box-shadow:0 18px 48px rgba(15,23,42,.18)}
-.heroTop{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}.hero h1{margin:0;font-size:31px}.eyebrow{font-size:11px;color:#cbd5e1;text-transform:uppercase;letter-spacing:.12em;font-weight:800}.heroDate{color:#cbd5e1;margin-top:6px;font-size:14px}
-.heroActions{display:flex;gap:8px;flex-wrap:wrap}.hero .btn{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.16);color:#fff}.hero .btn.primary{background:#fff;color:#111827}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:22px}.stat{background:rgba(255,255,255,.08);border-radius:14px;padding:12px}.stat b{font-size:24px}.stat span{display:block;font-size:11px;color:#cbd5e1;margin-top:2px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
-.section{margin-top:18px}.sectionTitle{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.sectionTitle h2{font-size:16px;margin:0}.hint{font-size:12px;color:var(--muted)}
-.homeGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}.pad{padding:16px}
-.quickGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.quickGrid .btn{text-align:left;min-height:46px;font-weight:700}
-.taskList{padding:4px 14px}.task{display:grid;grid-template-columns:auto 5px 1fr auto;gap:10px;padding:13px 0;border-top:1px solid var(--line);align-items:start}.task:first-child{border-top:0}.bar{border-radius:99px;min-height:48px}.check{width:19px;height:19px;margin-top:2px}.task.done .title{text-decoration:line-through;color:#94a3b8}.title{font-weight:700}.meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}.pill{font-size:10px;font-weight:700;border-radius:999px;padding:4px 7px}.cat{color:#fff}.status{background:#eef2f6;color:#475569}.urgent{background:#dc2626;color:#fff}.high{background:#fee2e2;color:#991b1b}.normal{background:#eff6ff;color:#1d4ed8}.low{background:#ecfdf5;color:#166534}.late{color:var(--danger);font-weight:700}.todayDue{color:var(--warn);font-weight:700}.conflict{background:#fff1f2;color:#be123c;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:800}.notes{font-size:12px;color:#64748b;margin-top:5px;white-space:pre-wrap}.icon{border:0;background:transparent;padding:5px}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px} input,select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff} textarea{min-height:100px;resize:vertical}.field{margin-bottom:10px}.field label{display:block;font-size:11px;font-weight:700;color:#64748b;margin-bottom:5px}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.modalbg{position:fixed;inset:0;background:rgba(15,23,42,.38);display:flex;align-items:center;justify-content:center;padding:16px;z-index:100}.modal{background:#fff;border-radius:18px;padding:18px;max-width:650px;width:100%;max-height:90vh;overflow:auto}.modal h3{margin:0 0 14px}.modalActions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
-.conflictBox{display:none;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:10px;border-radius:10px;font-size:13px;font-weight:650;margin-bottom:10px}
-.taskPreview{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;margin-bottom:12px}
-.taskPreviewBar{width:6px;align-self:stretch;min-height:44px;border-radius:99px;background:#2563eb}
-.taskPreviewMain{flex:1}.taskPreviewTitle{font-weight:800;font-size:13px}.taskPreviewMeta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
-.previewPill{font-size:10px;font-weight:800;border-radius:999px;padding:4px 7px}.previewCat{color:#fff}.previewUrgent{background:#dc2626;color:#fff}.previewHigh{background:#fee2e2;color:#991b1b}.previewNormal{background:#eff6ff;color:#1d4ed8}.previewLow{background:#ecfdf5;color:#166534}
-.week,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.week div{text-align:center;font-size:11px;color:var(--muted);padding:6px}.day{min-height:90px;border:1px solid var(--line);border-radius:10px;padding:6px;background:#fff}.day.empty{border:0;background:transparent}.day.today{outline:2px solid var(--accent)}.dayNum{font-size:11px;font-weight:800}.mini{font-size:9px;color:#fff;border-radius:6px;padding:4px 5px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.monthNav{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.column{background:#eef2f7;border-radius:14px;padding:10px;min-height:360px}.column h3{font-size:13px;color:#475569}.kcard{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px;margin-bottom:8px}
-.mailGrid{display:grid;grid-template-columns:320px 1fr;gap:14px}.contact{display:flex;gap:8px;padding:8px 0;border-top:1px solid var(--line);align-items:center}.contact:first-child{border-top:0}.contact input{width:auto}.mailActions{display:flex;gap:8px;flex-wrap:wrap}.empty{text-align:center;color:var(--muted);padding:24px}
-@media(max-width:800px){
- .app{grid-template-columns:1fr}
- .sidebar{position:static;height:auto;padding:10px 12px}
- .brand{font-size:20px;margin-bottom:2px}
- .brand small{font-size:9px}
- .nav{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
- .nav button{padding:8px 9px;font-size:13px}
- .sidebottom{display:none}
- .main{padding:8px}
-
- .hero{padding:12px 14px;border-radius:16px;margin-bottom:10px}
- .heroTop{display:block}
- .eyebrow{font-size:9px;margin-bottom:4px}
- .hero h1{font-size:22px;line-height:1.05}
- .heroDate{font-size:12px;margin-top:4px}
- .heroActions{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
- .heroActions .btn{padding:9px 8px;min-height:40px;font-size:13px}
-
- .stats{grid-template-columns:repeat(4,1fr);gap:5px;margin-top:10px}
- .stat{padding:7px 5px;border-radius:10px;text-align:center}
- .stat b{font-size:18px}
- .stat span{font-size:9px;line-height:1.1}
-
- .homeGrid{grid-template-columns:1fr;gap:10px;margin-top:10px}
- .pad{padding:12px}
- .section{margin-top:10px}
- .sectionTitle{margin-bottom:7px}
- .sectionTitle h2{font-size:14px}
- .hint{font-size:10px}
-
- .quickGrid{grid-template-columns:1fr 1fr;gap:6px}
- .quickGrid .btn{min-height:40px;padding:8px;font-size:12px}
-
- .taskList{padding:2px 10px}
- .task{padding:10px 0;gap:8px;grid-template-columns:auto 4px 1fr auto}
- .title{font-size:13px}
- .meta{gap:4px;margin-top:4px}
- .pill{font-size:9px;padding:3px 6px}
- .notes{font-size:11px}
- .bar{min-height:40px}
-
- .mailGrid,.kanban{grid-template-columns:1fr}
- .formgrid{grid-template-columns:1fr}
- .day{min-height:66px}
- input,select,textarea{font-size:16px;min-height:44px}
- .mailActions{display:grid}
- .mailActions .btn{min-height:46px}
-}
+:root{--bg:#f3f5f8;--panel:#fff;--text:#162033;--muted:#68758a;--line:#e5e9ef;--blue:#2563eb;--red:#dc2626;--orange:#d97706;--green:#15803d;--nav:#111827;--shadow:0 10px 26px rgba(15,23,42,.07)}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}button,input,select,textarea{-webkit-tap-highlight-color:transparent}
+.app{min-height:100vh}.sidebar{display:none}.main{max-width:1150px;margin:auto;padding:12px 12px 90px}.page{display:none}.page.active{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+.btn{border:1px solid var(--line);background:#fff;color:var(--text);padding:11px 14px;border-radius:12px;font-weight:700}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.danger{color:#b42318;background:#fff5f5;border-color:#fecaca}.btn.soft{background:#f8fafc}
+.topmobile{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}.logo{font-weight:900;font-size:24px;letter-spacing:-.03em}.logo small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.12em;margin-top:1px}.avatar{width:38px;height:38px;border-radius:12px;background:#111827;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}.sum{background:#fff;border:1px solid var(--line);border-radius:13px;padding:9px 4px;text-align:center}.sum b{display:block;font-size:20px;line-height:1}.sum span{display:block;font-size:9px;color:var(--muted);margin-top:4px}.sum.alert{background:#fff7f7;border-color:#fecaca}.sum.alert b{color:#b42318}
+.headline{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0 9px}.headline h1,.headline h2{margin:0}.headline h1{font-size:22px}.headline h2{font-size:17px}.sub{font-size:11px;color:var(--muted)}
+.homeActions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}.homeActions .btn{min-height:46px;text-align:left;padding:10px 12px}
+.priorityStrip{background:linear-gradient(135deg,#0f172a,#1e293b 68%,#254da0);color:#fff;border-radius:18px;padding:14px;margin-bottom:12px}.priorityStrip .sub{color:#cbd5e1}
+.tasklist{padding:0 10px}.task{position:relative;padding:12px 2px;border-top:1px solid var(--line)}.task:first-child{border-top:0}.taskTop{display:grid;grid-template-columns:22px 5px 1fr;gap:9px;align-items:start}.check{width:21px;height:21px;margin-top:2px}.colorbar{width:5px;min-height:54px;border-radius:99px}.taskTitle{font-size:16px;font-weight:850;line-height:1.18}.task.done .taskTitle{text-decoration:line-through;color:#94a3b8}.meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:6px}.pill{font-size:10px;font-weight:800;padding:4px 7px;border-radius:999px}.cat{color:#fff}.status{background:#eef2f6;color:#475569}.p-urgent{background:#dc2626;color:#fff}.p-high{background:#fee2e2;color:#991b1b}.p-normal{background:#eaf2ff;color:#1d4ed8}.p-low{background:#ecfdf5;color:#166534}.when{font-size:12px;font-weight:750;color:#475569}.late{color:#b42318}.today{color:#b45309}.conflict{font-size:10px;font-weight:800;background:#fff1f2;color:#be123c;padding:3px 6px;border-radius:999px}.taskNotes{margin:8px 0 0 36px;color:#60708a;font-size:13px;white-space:pre-wrap;line-height:1.42}.taskActions{display:flex;gap:7px;margin:10px 0 0 36px}.taskActions button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 11px;font-size:12px;font-weight:750}.taskActions .edit{color:#1d4ed8;background:#f5f9ff}.taskActions .delete{color:#b42318;background:#fff7f7}
+.empty{padding:24px 12px;text-align:center;color:var(--muted);font-size:13px}.section{margin-top:12px}.nextRow{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line)}.nextRow:first-child{border-top:0}.nextRow strong{font-size:13px}.nextRow .date{font-size:12px;color:var(--muted);white-space:nowrap}
+.toolbar{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:9px}.toolbar select:last-child{grid-column:1/-1}
+input,select,textarea{width:100%;border:1px solid var(--line);background:#fff;color:var(--text);border-radius:12px;padding:11px;min-height:44px;font-size:16px}textarea{resize:vertical;min-height:115px}.field{margin-bottom:11px}.field label{display:block;color:#5b687b;font-size:11px;font-weight:800;margin-bottom:5px}.formgrid{display:grid;grid-template-columns:1fr;gap:0}
+.modalbg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;display:flex;align-items:flex-end}.modal{background:#fff;width:100%;height:92dvh;border-radius:22px 22px 0 0;padding:16px 14px calc(18px + env(safe-area-inset-bottom));overflow:auto}.modalHeader{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-16px;background:#fff;padding:4px 0 10px;z-index:3}.modalHeader h3{margin:0;font-size:20px}.close{border:0;background:#eef2f7;width:36px;height:36px;border-radius:50%;font-size:20px}
+.taskPreview{display:grid;grid-template-columns:6px 1fr;gap:10px;background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:12px}.previewBar{border-radius:99px;min-height:48px}.previewTitle{font-size:15px;font-weight:850}.previewMeta{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}.conflictBox{display:none;background:#fff7ed;border:1px solid #fdba74;color:#9a3412;padding:10px;border-radius:11px;font-size:12px;font-weight:700;margin-bottom:10px}
+.modalFooter{position:sticky;bottom:-18px;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 22%);padding-top:18px;display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
+.bottomnav{position:fixed;z-index:900;left:0;right:0;bottom:0;background:rgba(255,255,255,.95);backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:7px 8px calc(7px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr)}.bottomnav button{border:0;background:transparent;color:#7a8597;font-size:10px;font-weight:700;padding:4px 2px}.bottomnav .ico{display:block;font-size:19px;line-height:1.1;margin-bottom:2px}.bottomnav button.active{color:var(--blue)}
+.fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom));z-index:920;width:58px;height:58px;border-radius:50%;border:0;background:var(--blue);color:#fff;font-size:30px;box-shadow:0 10px 25px rgba(37,99,235,.35)}
+.week,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.week div{text-align:center;font-size:9px;color:var(--muted);padding:5px 0}.day{min-height:68px;background:#fff;border:1px solid var(--line);border-radius:9px;padding:4px}.day.blank{border:0;background:transparent}.day.now{outline:2px solid var(--blue)}.dayNum{font-size:10px;font-weight:800}.mini{font-size:8px;color:#fff;padding:3px 4px;border-radius:5px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.monthnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.kanban{display:grid;grid-template-columns:1fr;gap:10px}.column{background:#e9edf3;border-radius:14px;padding:9px}.column h3{font-size:13px;margin:2px 0 9px}.kcard{background:#fff;border:1px solid var(--line);border-radius:11px;padding:10px;margin-bottom:7px}
+.mailGrid{display:grid;grid-template-columns:1fr;gap:10px}.contact{display:flex;gap:9px;padding:9px 0;border-top:1px solid var(--line);align-items:center}.contact:first-child{border-top:0}.contact input{width:20px;height:20px;min-height:0}.mailActions{display:grid;gap:7px}.hidden{display:none!important}
+@media(min-width:850px){.app{display:grid;grid-template-columns:250px 1fr}.sidebar{display:flex;background:var(--nav);color:#fff;min-height:100vh;padding:20px 16px;flex-direction:column;gap:16px}.sidebrand{font-size:24px;font-weight:850}.sidebrand small{display:block;color:#94a3b8;font-size:10px;text-transform:uppercase;margin-top:4px}.sidenav{display:flex;flex-direction:column;gap:5px}.sidenav button{border:0;background:transparent;color:#d1d5db;text-align:left;padding:10px 12px;border-radius:10px}.sidenav button.active,.sidenav button:hover{background:#1f2937;color:#fff}.sidebottom{margin-top:auto;display:grid;gap:7px}.sidebottom button{background:transparent;color:#d1d5db;border:1px solid #374151;border-radius:10px;padding:9px;text-align:left}.main{padding:26px 28px 60px}.topmobile,.bottomnav,.fab{display:none}.summary{max-width:620px}.homeActions{grid-template-columns:repeat(4,1fr)}.homegridDesktop{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.modalbg{align-items:center;justify-content:center}.modal{max-width:680px;height:auto;max-height:90vh;border-radius:20px}.formgrid{grid-template-columns:1fr 1fr;gap:10px}.toolbar{display:flex}.toolbar select{max-width:220px}.toolbar select:last-child{grid-column:auto}.mailGrid{grid-template-columns:320px 1fr}.kanban{grid-template-columns:repeat(4,1fr)}}
 </style>
 </head>
 <body>
 <div class="app">
 <aside class="sidebar">
-  <div class="brand">Coordo<small>Organiseur personnel</small></div>
-  <div class="nav">
+  <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
+  <div class="sidenav">
     <button class="active" data-page="home" onclick="showPage('home',this)">Accueil</button>
     <button data-page="all" onclick="showPage('all',this)">Mes tâches</button>
-    <button data-page="today" onclick="showPage('today',this)">Aujourd’hui <span id="navToday" class="count">0</span></button>
-    <button data-page="week" onclick="showPage('week',this)">Cette semaine <span id="navWeek" class="count">0</span></button>
-    <button data-page="quick" onclick="showPage('quick',this)">📝 Notes rapides <span id="navQuick" class="count">0</span></button>
+    <button data-page="today" onclick="showPage('today',this)">Aujourd’hui</button>
+    <button data-page="week" onclick="showPage('week',this)">Cette semaine</button>
+    <button data-page="quick" onclick="showPage('quick',this)">Notes rapides</button>
     <button data-page="calendar" onclick="showPage('calendar',this)">Calendrier</button>
     <button data-page="kanban" onclick="showPage('kanban',this)">Kanban</button>
-    <button data-page="mail" onclick="showPage('mail',this)">✉️ Mail</button>
+    <button data-page="mail" onclick="showPage('mail',this)">Mail</button>
   </div>
-  <div class="sidebottom">
-    <button class="sidebtn" onclick="manageCategories()">⚙️ Catégories</button>
-    <button class="sidebtn" onclick="exportData()">⬇️ Sauvegarder</button>
-    <button class="sidebtn" onclick="document.getElementById('importFile').click()">⬆️ Restaurer</button>
-    <input id="importFile" class="hidden" type="file" accept=".json" onchange="importData(event)">
-  </div>
+  <div class="sidebottom"><button onclick="manageCategories()">⚙️ Catégories</button><button onclick="exportData()">⬇️ Sauvegarder</button><button onclick="$('importFile').click()">⬆️ Restaurer</button></div>
 </aside>
 
 <main class="main">
-<section id="page-home" class="page active">
-  <div class="hero">
-    <div class="heroTop">
-      <div><div class="eyebrow">Coordo · Organiseur personnel</div><h1>Bonjour Jérôme</h1><div id="homeDate" class="heroDate"></div></div>
-      <div class="heroActions"><button class="btn" onclick="showPage('all',document.querySelector('[data-page=all]'))">Mes tâches</button><button class="btn primary" onclick="openTaskModal()">+ Nouvelle tâche</button></div>
-    </div>
-    <div class="stats"><div class="stat"><b id="homeTodo">0</b><span>À faire</span></div><div class="stat"><b id="homeUrgent">0</b><span>Urgentes</span></div><div class="stat"><b id="homeLate">0</b><span>En retard</span></div><div class="stat"><b id="homeToday">0</b><span>Aujourd’hui</span></div></div>
-  </div>
-  <div class="homeGrid">
-    <div class="card pad"><div class="sectionTitle"><h2>Accès rapide</h2><span class="hint">En un geste</span></div><div class="quickGrid"><button class="btn" onclick="openTaskModal()">➕ Nouvelle tâche</button><button class="btn" onclick="showPage('quick',document.querySelector('[data-page=quick]'))">📝 Note rapide</button><button class="btn" onclick="showPage('mail',document.querySelector('[data-page=mail]'))">✉️ Nouveau mail</button><button class="btn" onclick="showPage('calendar',document.querySelector('[data-page=calendar]'))">📅 Calendrier</button></div></div>
-    <div class="card pad"><div class="sectionTitle"><h2>Prochaines échéances</h2><span class="hint">À surveiller</span></div><div id="homeDeadlines"></div></div>
-  </div>
-  <div class="section"><div class="sectionTitle"><h2>🔥 Priorités du moment</h2><span class="hint">Urgences, retards, échéances proches</span></div><div class="card taskList" id="homePriority"></div></div>
-</section>
+  <div class="topmobile"><div class="logo">Coordo<small>Organiseur personnel</small></div><div class="avatar">JB</div></div>
 
-<section id="page-all" class="page">
-  <div class="sectionTitle"><div><h2 style="font-size:22px">Mes tâches</h2><span class="hint">Tri intelligent par défaut</span></div><button class="btn primary" onclick="openTaskModal()">+ Nouvelle tâche</button></div>
-  <div class="toolbar"><select id="filterCategory" onchange="renderAll()"></select><select id="filterStatus" onchange="renderAll()"><option value="Tous">Tous les statuts</option><option selected>À faire</option><option>En cours</option><option>En attente</option><option>Terminé</option></select><select id="sortMode" onchange="renderAll()"><option value="smart">Tri intelligent</option><option value="date">Date</option><option value="priority">Priorité</option><option value="category">Catégorie</option></select></div>
-  <div class="card taskList" id="allList"></div>
-</section>
+  <section id="page-home" class="page active">
+    <div class="headline"><div><h1>Bonjour Jérôme</h1><div id="homeDate" class="sub"></div></div><button class="btn primary" onclick="openTaskModal()">+ Tâche</button></div>
+    <div class="summary"><div class="sum"><b id="homeTodo">0</b><span>À faire</span></div><div class="sum alert"><b id="homeUrgent">0</b><span>Urgentes</span></div><div class="sum alert"><b id="homeLate">0</b><span>En retard</span></div><div class="sum"><b id="homeToday">0</b><span>Aujourd’hui</span></div></div>
+    <div class="homeActions"><button class="btn soft" onclick="openTaskModal()">➕ Nouvelle tâche</button><button class="btn soft" onclick="showPage('quick',navFor('quick'))">📝 Note rapide</button><button class="btn soft" onclick="showPage('mail',navFor('mail'))">✉️ Nouveau mail</button><button class="btn soft" onclick="showPage('calendar',navFor('calendar'))">📅 Calendrier</button></div>
+    <div class="priorityStrip"><div class="headline"><div><h2>🔥 À traiter</h2><div class="sub">Urgences, retards et échéances proches</div></div></div><div id="homePriority"></div></div>
+    <div class="homegridDesktop"><div class="card tasklist" id="homeTasks"></div><div class="card" style="padding:14px"><div class="headline"><h2>Prochaines échéances</h2><div class="sub">À surveiller</div></div><div id="homeDeadlines"></div></div></div>
+  </section>
 
-<section id="page-today" class="page"><div class="sectionTitle"><h2>Aujourd’hui</h2><button class="btn primary" onclick="openTaskModal(todayISO())">+ Ajouter</button></div><div class="card taskList" id="todayList"></div></section>
-<section id="page-week" class="page"><div class="sectionTitle"><h2>Cette semaine</h2><span class="hint">7 prochains jours</span></div><div class="card taskList" id="weekList"></div></section>
+  <section id="page-all" class="page">
+    <div class="headline"><div><h1>Mes tâches</h1><div class="sub">Modifier et supprimer sont accessibles directement.</div></div><button class="btn primary" onclick="openTaskModal()">+ Ajouter</button></div>
+    <div class="toolbar"><select id="filterCategory" onchange="renderAll()"></select><select id="filterStatus" onchange="renderAll()"><option value="Tous">Tous statuts</option><option selected>À faire</option><option>En cours</option><option>En attente</option><option>Terminé</option></select><select id="sortMode" onchange="renderAll()"><option value="smart">Priorité intelligente</option><option value="date">Par date</option><option value="priority">Par priorité</option><option value="category">Par catégorie</option></select></div>
+    <div class="card tasklist" id="allList"></div>
+  </section>
 
-<section id="page-quick" class="page">
-  <div class="card pad"><div class="sectionTitle"><h2>📝 Notes rapides</h2><span class="hint">Capturer maintenant, classer ensuite</span></div>
-    <div class="field"><input id="quickText" placeholder="Ex. Relancer Vincent pour le créneau"></div>
-    <div class="formgrid"><div class="field"><label>Priorité</label><select id="quickPriority"><option value="normale">Normale</option><option value="haute">Haute</option><option value="urgent">Urgent</option><option value="basse">Basse</option></select></div><div class="field"><label>Date éventuelle</label><input id="quickDate" type="date"></div></div>
-    <button class="btn primary" onclick="addQuick()">Ajouter la note</button>
-  </div>
-  <div class="section"><div class="card taskList" id="quickList"></div></div>
-</section>
+  <section id="page-today" class="page"><div class="headline"><h1>Aujourd’hui</h1><button class="btn primary" onclick="openTaskModal(todayISO())">+ Ajouter</button></div><div class="card tasklist" id="todayList"></div></section>
+  <section id="page-week" class="page"><div class="headline"><div><h1>Cette semaine</h1><div class="sub">Les 7 prochains jours</div></div></div><div class="card tasklist" id="weekList"></div></section>
 
-<section id="page-calendar" class="page"><div class="card pad"><div class="monthNav"><button class="btn" onclick="changeMonth(-1)">‹</button><strong id="monthTitle"></strong><button class="btn" onclick="changeMonth(1)">›</button></div><div class="week"><div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div></div><div id="monthCalendar" class="days"></div></div></section>
+  <section id="page-quick" class="page">
+    <div class="headline"><div><h1>Notes rapides</h1><div class="sub">Note maintenant, classe ensuite.</div></div></div>
+    <div class="card" style="padding:13px"><div class="field"><input id="quickText" placeholder="Ex. Relancer Vincent pour le créneau"></div><div class="formgrid"><div class="field"><label>Priorité</label><select id="quickPriority"><option value="normale">Normale</option><option value="haute">Haute</option><option value="urgent">Urgent</option><option value="basse">Basse</option></select></div><div class="field"><label>Date éventuelle</label><input id="quickDate" type="date"></div></div><button class="btn primary" style="width:100%" onclick="addQuick()">Ajouter la note</button></div>
+    <div class="section card tasklist" id="quickList"></div>
+  </section>
 
-<section id="page-kanban" class="page"><div id="kanban" class="kanban"></div></section>
+  <section id="page-calendar" class="page"><div class="headline"><h1>Calendrier</h1><button class="btn primary" onclick="openTaskModal()">+ Ajouter</button></div><div class="card" style="padding:10px"><div class="monthnav"><button class="btn" onclick="changeMonth(-1)">‹</button><strong id="monthTitle"></strong><button class="btn" onclick="changeMonth(1)">›</button></div><div class="week"><div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div></div><div class="days" id="monthCalendar"></div></div></section>
 
-<section id="page-mail" class="page">
-<div class="mailGrid">
-  <div class="card pad"><div class="sectionTitle"><h2>Destinataires</h2><span class="hint">Vauban + perso</span></div><div id="contactsList"></div><div class="field"><label>Autre contact</label><input id="customEmail" type="email" placeholder="prenom.nom@exemple.com"></div></div>
-  <div class="card pad">
-    <div class="sectionTitle"><h2>Nouveau mail</h2><span class="hint">Professionnel · signature automatique</span></div>
-    <div class="field"><label>Objet</label><input id="mailSubject"></div>
-    <div class="field"><label>Mon brouillon</label><textarea id="mailBody" style="min-height:180px"></textarea></div>
-    <div class="mailActions"><button class="btn" onclick="openChatGPT()">✨ 1. Copier + ouvrir ChatGPT</button></div>
-    <div class="field" style="margin-top:14px"><label>Version corrigée par ChatGPT</label><textarea id="mailFinal" style="min-height:180px" placeholder="Colle ici la réponse de ChatGPT"></textarea></div>
-    <div class="mailActions"><button class="btn primary" onclick="openMail()">✉️ 2. Ouvrir Mail</button><button class="btn" onclick="pasteFinal()">📋 Coller</button><button class="btn" onclick="clearMail()">Effacer</button></div>
-    <div id="mailInfo" class="hint" style="margin-top:10px"></div>
-  </div>
-</div>
-</section>
+  <section id="page-kanban" class="page"><div class="headline"><h1>Kanban</h1></div><div id="kanban" class="kanban"></div></section>
+
+  <section id="page-mail" class="page">
+    <div class="headline"><div><h1>Mail</h1><div class="sub">Brouillon → ChatGPT → Mail</div></div></div>
+    <div class="mailGrid"><div class="card" style="padding:13px"><div class="headline"><h2>Destinataires</h2></div><div id="contactsList"></div><div class="field"><label>Autre contact</label><input id="customEmail" type="email" placeholder="prenom.nom@exemple.com"></div></div><div class="card" style="padding:13px"><div class="field"><label>Objet</label><input id="mailSubject" placeholder="Objet du mail"></div><div class="field"><label>Mon brouillon</label><textarea id="mailBody" placeholder="Écris simplement ton idée…"></textarea></div><div class="mailActions"><button class="btn" onclick="openChatGPT()">✨ 1. Copier + ouvrir ChatGPT</button></div><div class="field" style="margin-top:12px"><label>Version corrigée</label><textarea id="mailFinal" placeholder="Colle ici la réponse de ChatGPT"></textarea></div><div class="mailActions"><button class="btn primary" onclick="openMail()">✉️ 2. Ouvrir Mail</button><button class="btn" onclick="pasteFinal()">📋 Coller</button><button class="btn danger" onclick="clearMail()">Effacer</button></div><div id="mailInfo" class="sub" style="margin-top:9px"></div></div></div>
+  </section>
 </main>
 </div>
 
+<button class="fab" onclick="openTaskModal()" aria-label="Nouvelle tâche">+</button>
+<nav class="bottomnav"><button class="active" data-page="home" onclick="showPage('home',this)"><span class="ico">⌂</span>Accueil</button><button data-page="all" onclick="showPage('all',this)"><span class="ico">☑︎</span>Tâches</button><button data-page="calendar" onclick="showPage('calendar',this)"><span class="ico">▦</span>Agenda</button><button data-page="quick" onclick="showPage('quick',this)"><span class="ico">✎</span>Notes</button><button data-page="mail" onclick="showPage('mail',this)"><span class="ico">✉</span>Mail</button></nav>
+
+<input id="importFile" class="hidden" type="file" accept=".json" onchange="importData(event)">
 <div id="modalRoot"></div>
 
 <script>
 const $=id=>document.getElementById(id);
-const DEFAULT_CATEGORIES=[
- {name:"Coordo",color:"#2563eb"},
- {name:"Coordo Com",color:"#7c3aed"},
- {name:"Coordo PAPS",color:"#059669"},
- {name:"Coordo Logistique",color:"#d97706"},
- {name:"Coordo Bac",color:"#0f766e"},
- {name:"Perso",color:"#64748b"}
-];
-const CONTACTS=[
- ["Jérôme iCloud","j.barletta@icloud.com"],["Jérôme Vauban","j.barletta@vauban.lu"],
- ["M. Vecrigner","m.vecrigner@vauban.lu"],["C. Jeudy","c.jeudy@vauban.lu"],["H. Lacouque","h.lacouque@vauban.lu"],["G. Mansouri","g.mansouri@vauban.lu"],
- ["H. De Rosa","h.derosa@vauban.lu"],["P. Perfetto","p.perfetto@vauban.lu"],["G. Ludwig","g.ludwig@vauban.lu"],["A. Le Pannerer","a.lepannerer@vauban.lu"],
- ["N. La Rosa","n.larosa@vauban.lu"],["P. Tezza","p.tezza@vauban.lu"]
-];
 const STORAGE="coordoCleanV6";
-let state=JSON.parse(localStorage.getItem(STORAGE)||"null")||{tasks:[],categories:DEFAULT_CATEGORIES};
-if(!Array.isArray(state.categories)||!state.categories.length) state.categories=[...DEFAULT_CATEGORIES];
-for(const c of DEFAULT_CATEGORIES){if(!state.categories.some(x=>x.name===c.name)) state.categories.push(c)}
-let calendarDate=new Date(), editingId=null;
-
-function save(){localStorage.setItem(STORAGE,JSON.stringify(state))}
-function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
-function addDaysISO(n){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
-function parseISO(s){return new Date(s+"T12:00:00")}
-function fmtDate(s){if(!s)return"Sans date";return new Intl.DateTimeFormat("fr-FR",{weekday:"short",day:"numeric",month:"short"}).format(parseISO(s))}
-function fmtLongDate(){return new Intl.DateTimeFormat("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date())}
-function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
-function cat(name){return state.categories.find(c=>c.name===name)||{name,color:"#64748b"}}
-function isDone(t){return t.status==="Terminé"}
-function isLate(t){return !isDone(t)&&t.date&&t.date<todayISO()}
-function prioRank(p){return p==="urgent"?0:p==="haute"?1:p==="normale"?2:3}
-function smartSort(a,b){if(isLate(a)!==isLate(b))return isLate(a)?-1:1;if(prioRank(a.priority)!==prioRank(b.priority))return prioRank(a.priority)-prioRank(b.priority);return(a.date||"9999").localeCompare(b.date||"9999")}
-function timeMin(v){if(!v)return null;const [h,m]=v.split(":").map(Number);return h*60+m}
-function conflictsFor(t){
- if(!t.date||t.allDay||!t.startTime||!t.endTime||isDone(t))return[];
- const s=timeMin(t.startTime),e=timeMin(t.endTime);if(e<=s)return[];
- return state.tasks.filter(x=>x.id!==t.id&&!isDone(x)&&x.date===t.date&&!x.allDay&&x.startTime&&x.endTime&&s<timeMin(x.endTime)&&e>timeMin(x.startTime));
-}
-function dueText(t){if(!t.date)return"Sans date";if(isLate(t)){const n=Math.max(1,Math.round((parseISO(todayISO())-parseISO(t.date))/86400000));return`⚠ ${n} jour${n>1?"s":""} de retard`}if(t.date===todayISO())return"Aujourd’hui";if(t.date===addDaysISO(1))return"Demain";return fmtDate(t.date)}
-function typeIcon(t){return({"Mail":"✉️","Appel":"📞","Réunion":"👥","Document":"📄","Relance":"🔁","Idée":"💡","Autre":"•"})[t.type||"Autre"]}
-
-function showPage(name,el){
- document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
- const page=document.getElementById("page-"+name);if(page)page.classList.add("active");
- document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));if(el)el.classList.add("active");
- if(name==="calendar")renderCalendar();if(name==="kanban")renderKanban();if(name==="mail")renderContacts();
-}
-function taskHTML(t){
- const c=cat(t.category),pc=t.priority==="urgent"?"urgent":t.priority==="haute"?"high":t.priority==="basse"?"low":"normal",pt=t.priority==="urgent"?"URGENT":t.priority==="haute"?"Haute":t.priority==="basse"?"Basse":"Normale";
- const cf=conflictsFor(t).length>0;
- return `<div class="task ${isDone(t)?"done":""}">
- <input class="check" type="checkbox" ${isDone(t)?"checked":""} onchange='toggleDone(${JSON.stringify(t.id)})'>
- <div class="bar" style="background:${c.color}"></div>
- <div><div class="title">${typeIcon(t)} ${esc(t.title)}</div><div class="meta"><span class="pill cat" style="background:${c.color}">${esc(t.category)}</span><span class="pill status">${esc(t.status)}</span><span class="pill ${pc}">${pt}</span><span class="${isLate(t)?"late":t.date===todayISO()?"todayDue":""}">${dueText(t)}${t.startTime?` · ${t.startTime}${t.endTime?`–${t.endTime}`:""}`:""}</span>${cf?`<span class="conflict">⚠ Conflit</span>`:""}</div>${t.notes?`<div class="notes">${esc(t.notes)}</div>`:""}</div>
- <div><button class="icon" onclick='editTask(${JSON.stringify(t.id)})'>✏️</button><button class="icon" onclick='deleteTask(${JSON.stringify(t.id)})'>🗑️</button></div></div>`;
-}
-function fill(id,arr,empty){const el=document.getElementById(id);if(el)el.innerHTML=arr.length?arr.map(taskHTML).join(""):`<div class="empty">${empty}</div>`}
-
-function renderHome(){
- const open=state.tasks.filter(t=>!isDone(t));
- $("homeDate").textContent=fmtLongDate();$("homeTodo").textContent=open.length;$("homeUrgent").textContent=open.filter(t=>t.priority==="urgent").length;$("homeLate").textContent=open.filter(isLate).length;$("homeToday").textContent=open.filter(t=>t.date===todayISO()).length;
- fill("homePriority",[...open].sort(smartSort).slice(0,6),"Aucune priorité.");
- const up=open.filter(t=>t.date&&t.date>=todayISO()).sort(smartSort).slice(0,4);
- $("homeDeadlines").innerHTML=up.length?up.map(t=>`<div style="display:flex;justify-content:space-between;padding:9px 0;border-top:1px solid var(--line)"><div><strong style="font-size:13px">${esc(t.title)}</strong><div class="hint">${esc(t.category)}</div></div><div class="hint">${dueText(t)}</div></div>`).join(""):`<div class="empty">Aucune échéance proche.</div>`;
-}
-function renderLists(){
- const open=state.tasks.filter(t=>!isDone(t));
- fill("todayList",open.filter(t=>t.date===todayISO()).sort(smartSort),"Rien de prévu aujourd’hui.");
- fill("weekList",open.filter(t=>t.date&&t.date>=todayISO()&&t.date<addDaysISO(7)).sort(smartSort),"Aucune échéance dans les 7 prochains jours.");
- fill("quickList",open.filter(t=>t.quick).sort(smartSort),"Aucune note rapide.");
- $("navToday").textContent=open.filter(t=>t.date===todayISO()).length;$("navWeek").textContent=open.filter(t=>t.date&&t.date>=todayISO()&&t.date<addDaysISO(7)).length;$("navQuick").textContent=open.filter(t=>t.quick).length;
-}
-function renderAllTasks(){
- const fc=$("filterCategory").value,fs=$("filterStatus").value,sm=$("sortMode").value;let arr=[...state.tasks];
- if(fc!=="Toutes")arr=arr.filter(t=>t.category===fc);if(fs!=="Tous")arr=arr.filter(t=>t.status===fs);
- if(sm==="smart")arr.sort(smartSort);else if(sm==="date")arr.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));else if(sm==="priority")arr.sort((a,b)=>prioRank(a.priority)-prioRank(b.priority));else arr.sort((a,b)=>a.category.localeCompare(b.category,"fr"));
- fill("allList",arr,"Aucune tâche.");
-}
-function renderFilters(){const el=$("filterCategory"),old=el.value;el.innerHTML='<option>Toutes</option>'+state.categories.map(c=>`<option>${esc(c.name)}</option>`).join("");if([...el.options].some(o=>o.value===old))el.value=old}
-function renderCalendar(){
- const y=calendarDate.getFullYear(),m=calendarDate.getMonth();$("monthTitle").textContent=new Intl.DateTimeFormat("fr-FR",{month:"long",year:"numeric"}).format(calendarDate);
- const first=new Date(y,m,1),start=(first.getDay()+6)%7,count=new Date(y,m+1,0).getDate();let out="";
- for(let i=0;i<start;i++)out+='<div class="day empty"></div>';
- for(let d=1;d<=count;d++){const iso=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,arr=state.tasks.filter(t=>t.date===iso&&!isDone(t)).sort(smartSort);out+=`<div class="day ${iso===todayISO()?"today":""}" ondblclick="openTaskModal('${iso}')"><div class="dayNum">${d}</div>${arr.slice(0,4).map(t=>`<div class="mini" style="background:${cat(t.category).color}">${esc(t.title)}</div>`).join("")}</div>`}
- $("monthCalendar").innerHTML=out;
-}
-function renderKanban(){$("kanban").innerHTML=["À faire","En cours","En attente","Terminé"].map(s=>{const arr=state.tasks.filter(t=>t.status===s).sort(smartSort);return`<div class="column"><h3>${s} · ${arr.length}</h3>${arr.map(t=>`<div class="kcard" onclick='editTask(${JSON.stringify(t.id)})'><strong style="font-size:13px">${typeIcon(t)} ${esc(t.title)}</strong><div class="meta"><span class="pill cat" style="background:${cat(t.category).color}">${esc(t.category)}</span></div></div>`).join("")||'<div class="empty">Vide</div>'}</div>`}).join("")}
+const DEFAULT_CATEGORIES=[{name:"Coordo",color:"#2563eb"},{name:"Coordo Com",color:"#7c3aed"},{name:"Coordo PAPS",color:"#059669"},{name:"Coordo Logistique",color:"#d97706"},{name:"Coordo Bac",color:"#0f766e"},{name:"Perso",color:"#64748b"}];
+const CONTACTS=[["Jérôme iCloud","j.barletta@icloud.com"],["Jérôme Vauban","j.barletta@vauban.lu"],["M. Vecrigner","m.vecrigner@vauban.lu"],["C. Jeudy","c.jeudy@vauban.lu"],["H. Lacouque","h.lacouque@vauban.lu"],["G. Mansouri","g.mansouri@vauban.lu"],["H. De Rosa","h.derosa@vauban.lu"],["P. Perfetto","p.perfetto@vauban.lu"],["G. Ludwig","g.ludwig@vauban.lu"],["A. Le Pannerer","a.lepannerer@vauban.lu"],["N. La Rosa","n.larosa@vauban.lu"],["P. Tezza","p.tezza@vauban.lu"]];
+let state;try{state=JSON.parse(localStorage.getItem(STORAGE)||"null")}catch(e){state=null}
+if(!state||!Array.isArray(state.tasks))state={tasks:[],categories:[...DEFAULT_CATEGORIES]};if(!Array.isArray(state.categories)||!state.categories.length)state.categories=[...DEFAULT_CATEGORIES];for(const c of DEFAULT_CATEGORIES){if(!state.categories.some(x=>x.name===c.name))state.categories.push({...c})}
+state.tasks=state.tasks.map(t=>({id:t.id||String(Date.now()+Math.random()),title:t.title||"Sans titre",category:t.category||"Coordo",type:t.type||"Autre",status:t.status||"À faire",priority:t.priority||"normale",date:t.date||"",allDay:!!t.allDay,startTime:t.startTime||"",endTime:t.endTime||"",notes:t.notes||"",quick:!!(t.quick||t.inbox),createdAt:t.createdAt||Date.now()}));
+let calendarDate=new Date(),editingId=null;
+function save(){localStorage.setItem(STORAGE,JSON.stringify(state))}function navFor(p){return document.querySelector(`.bottomnav [data-page="${p}"]`)||document.querySelector(`.sidenav [data-page="${p}"]`)}
+function showPage(name,el){document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));const page=$("page-"+name);if(page)page.classList.add("active");document.querySelectorAll("[data-page]").forEach(x=>x.classList.remove("active"));document.querySelectorAll(`[data-page="${name}"]`).forEach(x=>x.classList.add("active"));if(name==="calendar")renderCalendar();if(name==="kanban")renderKanban();if(name==="mail")renderContacts();window.scrollTo({top:0,behavior:"smooth"})}
+function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}function addDaysISO(n){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}function parseISO(s){return new Date(s+"T12:00:00")}function fmtLong(){return new Intl.DateTimeFormat("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date())}function fmtDate(s){if(!s)return"Sans date";return new Intl.DateTimeFormat("fr-FR",{weekday:"short",day:"numeric",month:"short"}).format(parseISO(s))}function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function cat(name){return state.categories.find(c=>c.name===name)||{name,color:"#64748b"}}function done(t){return t.status==="Terminé"}function late(t){return !done(t)&&t.date&&t.date<todayISO()}function prioRank(p){return p==="urgent"?0:p==="haute"?1:p==="normale"?2:3}function smartSort(a,b){if(late(a)!==late(b))return late(a)?-1:1;if(prioRank(a.priority)!==prioRank(b.priority))return prioRank(a.priority)-prioRank(b.priority);return(a.date||"9999").localeCompare(b.date||"9999")}function timeMin(v){if(!v)return null;const[h,m]=v.split(":").map(Number);return h*60+m}
+function conflictsFor(t){if(!t.date||t.allDay||!t.startTime||!t.endTime||done(t))return[];const s=timeMin(t.startTime),e=timeMin(t.endTime);if(e<=s)return[];return state.tasks.filter(x=>x.id!==t.id&&!done(x)&&x.date===t.date&&!x.allDay&&x.startTime&&x.endTime&&s<timeMin(x.endTime)&&e>timeMin(x.startTime))}
+function dueText(t){if(!t.date)return"Sans date";if(late(t)){const n=Math.max(1,Math.round((parseISO(todayISO())-parseISO(t.date))/86400000));return`⚠ ${n} j de retard`}if(t.date===todayISO())return"Aujourd’hui";if(t.date===addDaysISO(1))return"Demain";return fmtDate(t.date)}
+function icon(t){return({Mail:"✉️",Appel:"📞","Réunion":"👥",Document:"📄",Relance:"🔁","Idée":"💡",Autre:"•"})[t.type||"Autre"]}
+function taskHTML(t){const c=cat(t.category),pc=t.priority==="urgent"?"p-urgent":t.priority==="haute"?"p-high":t.priority==="basse"?"p-low":"p-normal",pn=t.priority==="urgent"?"URGENT":t.priority==="haute"?"Haute":t.priority==="basse"?"Basse":"Normale",cf=conflictsFor(t).length>0;return `<div class="task ${done(t)?"done":""}"><div class="taskTop"><input class="check" type="checkbox" ${done(t)?"checked":""} onchange='toggleDone(${JSON.stringify(t.id)})'><div class="colorbar" style="background:${c.color}"></div><div><div class="taskTitle">${icon(t)} ${esc(t.title)}</div><div class="meta"><span class="pill cat" style="background:${c.color}">${esc(t.category)}</span><span class="pill status">${esc(t.status)}</span><span class="pill ${pc}">${pn}</span>${cf?'<span class="conflict">⚠ Conflit</span>':""}</div><div class="when ${late(t)?"late":t.date===todayISO()?"today":""}" style="margin-top:6px">${dueText(t)}${t.startTime?` · ${t.startTime}${t.endTime?`–${t.endTime}`:""}`:""}</div></div></div>${t.notes?`<div class="taskNotes">${esc(t.notes)}</div>`:""}<div class="taskActions"><button class="edit" onclick='editTask(${JSON.stringify(t.id)})'>✏️ Modifier</button><button class="delete" onclick='deleteTask(${JSON.stringify(t.id)})'>🗑️ Supprimer</button></div></div>`}
+function fill(id,arr,empty="Aucune tâche"){const el=$(id);if(el)el.innerHTML=arr.length?arr.map(taskHTML).join(""):`<div class="empty">${empty}</div>`}
+function renderHome(){const open=state.tasks.filter(t=>!done(t));$("homeDate").textContent=fmtLong();$("homeTodo").textContent=open.length;$("homeUrgent").textContent=open.filter(t=>t.priority==="urgent").length;$("homeLate").textContent=open.filter(late).length;$("homeToday").textContent=open.filter(t=>t.date===todayISO()).length;const priorities=[...open].sort(smartSort).slice(0,3);$("homePriority").innerHTML=priorities.length?priorities.map(t=>`<div style="padding:7px 0;border-top:1px solid rgba(255,255,255,.12)"><strong style="font-size:13px">${icon(t)} ${esc(t.title)}</strong><div style="font-size:11px;color:#cbd5e1;margin-top:3px">${dueText(t)}${t.startTime?` · ${t.startTime}`:""} · ${esc(t.category)}</div></div>`).join(""):`<div style="font-size:12px;color:#cbd5e1">Rien de prioritaire.</div>`;fill("homeTasks",[...open].sort(smartSort).slice(0,5),"Aucune tâche à faire.");const up=open.filter(t=>t.date&&t.date>=todayISO()).sort(smartSort).slice(0,4);$("homeDeadlines").innerHTML=up.length?up.map(t=>`<div class="nextRow"><div><strong>${esc(t.title)}</strong><div class="sub">${esc(t.category)}</div></div><div class="date">${dueText(t)}</div></div>`).join(""):`<div class="empty">Aucune échéance proche.</div>`}
+function renderLists(){const open=state.tasks.filter(t=>!done(t));fill("todayList",open.filter(t=>t.date===todayISO()).sort(smartSort),"Rien de prévu aujourd’hui.");fill("weekList",open.filter(t=>t.date&&t.date>=todayISO()&&t.date<addDaysISO(7)).sort(smartSort),"Aucune échéance cette semaine.");fill("quickList",open.filter(t=>t.quick).sort(smartSort),"Aucune note rapide.")}
+function renderFilters(){const el=$("filterCategory"),old=el.value;el.innerHTML='<option>Toutes catégories</option>'+state.categories.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");if([...el.options].some(o=>o.value===old))el.value=old}
+function renderAllTasks(){let arr=[...state.tasks],fc=$("filterCategory").value,fs=$("filterStatus").value,sm=$("sortMode").value;if(fc!=="Toutes catégories")arr=arr.filter(t=>t.category===fc);if(fs!=="Tous")arr=arr.filter(t=>t.status===fs);if(sm==="smart")arr.sort(smartSort);else if(sm==="date")arr.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));else if(sm==="priority")arr.sort((a,b)=>prioRank(a.priority)-prioRank(b.priority));else arr.sort((a,b)=>a.category.localeCompare(b.category,"fr"));fill("allList",arr,"Aucune tâche.")}
+function renderCalendar(){const y=calendarDate.getFullYear(),m=calendarDate.getMonth();$("monthTitle").textContent=new Intl.DateTimeFormat("fr-FR",{month:"long",year:"numeric"}).format(calendarDate);const first=new Date(y,m,1),start=(first.getDay()+6)%7,count=new Date(y,m+1,0).getDate();let out="";for(let i=0;i<start;i++)out+='<div class="day blank"></div>';for(let d=1;d<=count;d++){const iso=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,arr=state.tasks.filter(t=>t.date===iso&&!done(t)).sort(smartSort);out+=`<div class="day ${iso===todayISO()?"now":""}" onclick="openTaskModal('${iso}')"><div class="dayNum">${d}</div>${arr.slice(0,3).map(t=>`<div class="mini" style="background:${cat(t.category).color}">${esc(t.title)}</div>`).join("")}</div>`}$("monthCalendar").innerHTML=out}
+function renderKanban(){$("kanban").innerHTML=["À faire","En cours","En attente","Terminé"].map(s=>{const arr=state.tasks.filter(t=>t.status===s).sort(smartSort);return`<div class="column"><h3>${s} · ${arr.length}</h3>${arr.map(t=>`<div class="kcard" onclick='editTask(${JSON.stringify(t.id)})'><strong>${icon(t)} ${esc(t.title)}</strong><div class="meta"><span class="pill cat" style="background:${cat(t.category).color}">${esc(t.category)}</span></div></div>`).join("")||'<div class="empty">Vide</div>'}</div>`}).join("")}
 function renderAll(){renderFilters();renderHome();renderLists();renderAllTasks();renderCalendar();renderKanban();save()}
-
-function toggleDone(id){const t=state.tasks.find(x=>x.id===id);if(t){t.status=isDone(t)?"À faire":"Terminé";renderAll()}}
-function deleteTask(id){if(confirm("Supprimer cette tâche ?")){state.tasks=state.tasks.filter(t=>t.id!==id);renderAll()}}
+function toggleDone(id){const t=state.tasks.find(x=>x.id===id);if(t){t.status=done(t)?"À faire":"Terminé";renderAll()}}
+function deleteTask(id){const t=state.tasks.find(x=>x.id===id);if(t&&confirm(`Supprimer « ${t.title} » ?`)){state.tasks=state.tasks.filter(x=>x.id!==id);renderAll()}}
 function editTask(id){const t=state.tasks.find(x=>x.id===id);if(t){editingId=id;openTaskModal(t.date||"",t)}}
-function openTaskModal(date="",task=null){
- const t=task||{title:"",category:"Coordo",type:"Autre",status:"À faire",priority:"normale",date:date||todayISO(),allDay:false,startTime:"",endTime:"",notes:"",quick:false};
- $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal"><h3>${task?"Modifier la tâche":"Nouvelle tâche"}</h3>
- <div class="field"><label>Titre</label><input id="mTitle" value="${esc(t.title)}" oninput="updateTaskPreview()"></div>
-<div class="taskPreview"><div id="taskPreviewBar" class="taskPreviewBar"></div><div class="taskPreviewMain"><div id="taskPreviewTitle" class="taskPreviewTitle">Nouvelle tâche</div><div class="taskPreviewMeta"><span id="taskPreviewCat" class="previewPill previewCat">Coordo</span><span id="taskPreviewPrio" class="previewPill previewNormal">Normale</span></div></div></div>
- <div class="formgrid">
-  <div class="field"><label>Catégorie</label><select id="mCategory" onchange="updateTaskPreview()">${state.categories.map(c=>`<option ${c.name===t.category?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>
-  <div class="field"><label>Type</label><select id="mType">${["Mail","Appel","Réunion","Document","Relance","Idée","Autre"].map(x=>`<option ${x===t.type?"selected":""}>${x}</option>`).join("")}</select></div>
-  <div class="field"><label>Statut</label><select id="mStatus">${["À faire","En cours","En attente","Terminé"].map(x=>`<option ${x===t.status?"selected":""}>${x}</option>`).join("")}</select></div>
-  <div class="field"><label>Priorité</label><select id="mPriority" onchange="updateTaskPreview()"><option value="urgent" ${t.priority==="urgent"?"selected":""}>URGENT</option><option value="haute" ${t.priority==="haute"?"selected":""}>Haute</option><option value="normale" ${t.priority==="normale"?"selected":""}>Normale</option><option value="basse" ${t.priority==="basse"?"selected":""}>Basse</option></select></div>
-  <div class="field"><label>Date</label><input id="mDate" type="date" value="${t.date||""}" onchange="checkConflict()"></div>
-  <div class="field"><label><input id="mAllDay" type="checkbox" style="width:auto" ${t.allDay?"checked":""} onchange="toggleTime();checkConflict()"> Toute la journée</label></div>
-  <div class="field"><label>Début</label><input id="mStart" type="time" value="${t.startTime||""}" onchange="checkConflict()"></div>
-  <div class="field"><label>Fin</label><input id="mEnd" type="time" value="${t.endTime||""}" onchange="checkConflict()"></div>
- </div>
- <div id="conflictBox" class="conflictBox"></div>
- <div class="field"><label>Notes</label><textarea id="mNotes">${esc(t.notes||"")}</textarea></div>
- <div class="field"><label><input id="mQuick" type="checkbox" style="width:auto" ${t.quick?"checked":""}> Garder dans Notes rapides</label></div>
- <div class="modalActions"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick="saveTask()">Enregistrer</button></div></div></div>`;
- setTimeout(()=>{toggleTime();checkConflict();updateTaskPreview()},0);
-}
-
-function updateTaskPreview(){
- const csel=$("mCategory"), psel=$("mPriority"), title=$("mTitle");
- if(!csel||!psel)return;
- const c=cat(csel.value);
- const bar=$("taskPreviewBar"), ct=$("taskPreviewCat"), pt=$("taskPreviewPrio"), tt=$("taskPreviewTitle");
- if(bar)bar.style.background=c.color;
- if(ct){ct.style.background=c.color;ct.textContent=csel.value}
- if(tt)tt.textContent=(title&&title.value.trim())?title.value.trim():"Nouvelle tâche";
- if(pt){
-   pt.className="previewPill "+(psel.value==="urgent"?"previewUrgent":psel.value==="haute"?"previewHigh":psel.value==="basse"?"previewLow":"previewNormal");
-   pt.textContent=psel.value==="urgent"?"URGENT":psel.value==="haute"?"Haute":psel.value==="basse"?"Basse":"Normale";
- }
-}
+function openTaskModal(date="",task=null){const t=task||{title:"",category:"Coordo",type:"Autre",status:"À faire",priority:"normale",date:date||todayISO(),allDay:false,startTime:"",endTime:"",notes:"",quick:false};$("modalRoot").innerHTML=`<div class="modalbg"><div class="modal"><div class="modalHeader"><h3>${task?"Modifier la tâche":"Nouvelle tâche"}</h3><button class="close" onclick="closeModal()">×</button></div><div class="taskPreview"><div id="previewBar" class="previewBar"></div><div><div id="previewTitle" class="previewTitle">Nouvelle tâche</div><div class="previewMeta"><span id="previewCat" class="pill cat">Coordo</span><span id="previewPrio" class="pill p-normal">Normale</span></div></div></div><div class="field"><label>Titre</label><input id="mTitle" value="${esc(t.title)}" placeholder="Ex. Préparer réunion Coordo" oninput="updatePreview()"></div><div class="formgrid"><div class="field"><label>Catégorie</label><select id="mCategory" onchange="updatePreview()">${state.categories.map(c=>`<option ${c.name===t.category?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div><div class="field"><label>Priorité</label><select id="mPriority" onchange="updatePreview()"><option value="urgent" ${t.priority==="urgent"?"selected":""}>🔴 URGENT</option><option value="haute" ${t.priority==="haute"?"selected":""}>🟠 Haute</option><option value="normale" ${t.priority==="normale"?"selected":""}>🔵 Normale</option><option value="basse" ${t.priority==="basse"?"selected":""}>🟢 Basse</option></select></div><div class="field"><label>Type</label><select id="mType">${["Mail","Appel","Réunion","Document","Relance","Idée","Autre"].map(x=>`<option ${x===t.type?"selected":""}>${x}</option>`).join("")}</select></div><div class="field"><label>Statut</label><select id="mStatus">${["À faire","En cours","En attente","Terminé"].map(x=>`<option ${x===t.status?"selected":""}>${x}</option>`).join("")}</select></div><div class="field"><label>Date</label><input id="mDate" type="date" value="${t.date||""}" onchange="checkConflict()"></div><div class="field"><label><input id="mAllDay" type="checkbox" style="width:auto;min-height:0" ${t.allDay?"checked":""} onchange="toggleTime();checkConflict()"> Toute la journée</label></div><div class="field"><label>Heure début</label><input id="mStart" type="time" value="${t.startTime||""}" onchange="checkConflict()"></div><div class="field"><label>Heure fin</label><input id="mEnd" type="time" value="${t.endTime||""}" onchange="checkConflict()"></div></div><div id="conflictBox" class="conflictBox"></div><div class="field"><label>Notes</label><textarea id="mNotes" placeholder="Détails, lien, personnes à contacter…">${esc(t.notes||"")}</textarea></div><div class="field"><label><input id="mQuick" type="checkbox" style="width:auto;min-height:0" ${t.quick?"checked":""}> Garder aussi dans Notes rapides</label></div><div class="modalFooter"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick="saveTask()">Enregistrer</button></div></div></div>`;setTimeout(()=>{toggleTime();updatePreview();checkConflict()},40)}
+function updatePreview(){const csel=$("mCategory"),psel=$("mPriority"),title=$("mTitle");if(!csel||!psel)return;const c=cat(csel.value);$("previewBar").style.background=c.color;$("previewCat").style.background=c.color;$("previewCat").textContent=csel.value;$("previewTitle").textContent=title.value.trim()||"Nouvelle tâche";$("previewPrio").className="pill "+(psel.value==="urgent"?"p-urgent":psel.value==="haute"?"p-high":psel.value==="basse"?"p-low":"p-normal");$("previewPrio").textContent=psel.value==="urgent"?"URGENT":psel.value==="haute"?"Haute":psel.value==="basse"?"Basse":"Normale"}
 function toggleTime(){const all=$("mAllDay");if(!all)return;$("mStart").disabled=all.checked;$("mEnd").disabled=all.checked;if(all.checked){$("mStart").value="";$("mEnd").value=""}}
 function modalCandidate(){return{id:editingId,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mStart").value,endTime:$("mEnd").value,status:$("mStatus").value}}
-function checkConflict(){const box=document.getElementById("conflictBox");if(!box)return;const c=modalCandidate();if(c.startTime&&c.endTime&&timeMin(c.endTime)<=timeMin(c.startTime)){box.style.display="block";box.textContent="⚠️ L’heure de fin doit être après l’heure de début.";return}const arr=conflictsFor(c);if(arr.length){box.style.display="block";box.innerHTML="⚠️ Conflit avec "+arr.map(t=>`« ${esc(t.title)} » (${t.startTime}–${t.endTime})`).join(", ")+". Tu peux quand même enregistrer."}else box.style.display="none"}
-function saveTask(){const title=$("mTitle").value.trim();if(!title){alert("Ajoute un titre.");return}if(!$("mAllDay").checked&&$("mStart").value&&$("mEnd").value&&timeMin($("mEnd").value)<=timeMin($("mStart").value)){alert("L’heure de fin doit être après l’heure de début.");return}const data={id:editingId||String(Date.now()+Math.random()),title,category:$("mCategory").value,type:$("mType").value,status:$("mStatus").value,priority:$("mPriority").value,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mAllDay").checked?"":$("mStart").value,endTime:$("mAllDay").checked?"":$("mEnd").value,notes:$("mNotes").value.trim(),quick:$("mQuick").checked,createdAt:editingId?(state.tasks.find(t=>t.id===editingId)?.createdAt||Date.now()):Date.now()};const cf=conflictsFor(data);if(cf.length&&!confirm("⚠️ Conflit avec :\n\n"+cf.map(t=>`${t.title} (${t.startTime}–${t.endTime})`).join("\n")+"\n\nEnregistrer quand même ?"))return;if(editingId)state.tasks=state.tasks.map(t=>t.id===editingId?data:t);else state.tasks.push(data);editingId=null;closeModal();renderAll()}
+function checkConflict(){const box=$("conflictBox");if(!box)return;const c=modalCandidate();if(c.startTime&&c.endTime&&timeMin(c.endTime)<=timeMin(c.startTime)){box.style.display="block";box.textContent="⚠️ L’heure de fin doit être après l’heure de début.";return}const arr=conflictsFor(c);if(arr.length){box.style.display="block";box.innerHTML="⚠️ Chevauchement avec "+arr.map(t=>`« ${esc(t.title)} » (${t.startTime}–${t.endTime})`).join(", ")+". Tu peux quand même enregistrer."}else box.style.display="none"}
+function saveTask(){const title=$("mTitle").value.trim();if(!title)return alert("Ajoute un titre.");if(!$("mAllDay").checked&&$("mStart").value&&$("mEnd").value&&timeMin($("mEnd").value)<=timeMin($("mStart").value))return alert("L’heure de fin doit être après l’heure de début.");const data={id:editingId||String(Date.now()+Math.random()),title,category:$("mCategory").value,type:$("mType").value,status:$("mStatus").value,priority:$("mPriority").value,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mAllDay").checked?"":$("mStart").value,endTime:$("mAllDay").checked?"":$("mEnd").value,notes:$("mNotes").value.trim(),quick:$("mQuick").checked,createdAt:editingId?(state.tasks.find(t=>t.id===editingId)?.createdAt||Date.now()):Date.now()};const cf=conflictsFor(data);if(cf.length&&!confirm("⚠️ Cette tâche chevauche :\n\n"+cf.map(t=>`${t.title} (${t.startTime}–${t.endTime})`).join("\n")+"\n\nEnregistrer quand même ?"))return;if(editingId)state.tasks=state.tasks.map(t=>t.id===editingId?data:t);else state.tasks.push(data);editingId=null;closeModal();renderAll();showPage("all",navFor("all"))}
 function closeModal(){editingId=null;$("modalRoot").innerHTML=""}
-
 function addQuick(){const title=$("quickText").value.trim();if(!title)return;state.tasks.push({id:String(Date.now()+Math.random()),title,category:"Coordo",type:"Autre",status:"À faire",priority:$("quickPriority").value,date:$("quickDate").value,allDay:false,startTime:"",endTime:"",notes:"",quick:true,createdAt:Date.now()});$("quickText").value="";$("quickDate").value="";renderAll()}
 function changeMonth(n){calendarDate=new Date(calendarDate.getFullYear(),calendarDate.getMonth()+n,1);renderCalendar()}
-
-function manageCategories(){
- $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal"><h3>Catégories</h3><div id="catManager"></div><div class="formgrid"><div class="field"><label>Nouvelle catégorie</label><input id="newCat"></div><div class="field"><label>Couleur</label><input id="newColor" type="color" value="#2563eb"></div></div><div class="modalActions"><button class="btn" onclick="closeModal()">Fermer</button><button class="btn primary" onclick="addCategory()">Ajouter</button></div></div></div>`;renderCategoryManager()
-}
-function renderCategoryManager(){catManager.innerHTML=state.categories.map((c,i)=>`<div style="display:grid;grid-template-columns:1fr 60px auto;gap:8px;margin:7px 0"><input value="${esc(c.name)}" onchange="renameCategory(${i},this.value)"><input type="color" value="${c.color}" onchange="state.categories[${i}].color=this.value;renderAll()"><button class="btn" onclick="removeCategory(${i})">×</button></div>`).join("")}
-function addCategory(){const n=newCat.value.trim();if(!n)return;if(state.categories.some(c=>c.name.toLowerCase()===n.toLowerCase())){alert("Cette catégorie existe déjà.");return}state.categories.push({name:n,color:newColor.value});renderAll();renderCategoryManager();newCat.value=""}
+function manageCategories(){$("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Catégories</h3><button class="close" onclick="closeModal()">×</button></div><div id="catManager"></div><div class="field" style="margin-top:12px"><label>Nouvelle catégorie</label><input id="newCat" placeholder="Ex. Coordo Examens"></div><div class="field"><label>Couleur</label><input id="newColor" type="color" value="#2563eb"></div><button class="btn primary" style="width:100%" onclick="addCategory()">Ajouter</button></div></div>`;renderCategoryManager()}
+function renderCategoryManager(){$("catManager").innerHTML=state.categories.map((c,i)=>`<div style="display:grid;grid-template-columns:1fr 55px auto;gap:7px;margin:7px 0"><input value="${esc(c.name)}" onchange="renameCategory(${i},this.value)"><input type="color" value="${c.color}" onchange="state.categories[${i}].color=this.value;renderAll()"><button class="btn danger" onclick="removeCategory(${i})">×</button></div>`).join("")}
+function addCategory(){const n=$("newCat").value.trim();if(!n)return;if(state.categories.some(c=>c.name.toLowerCase()===n.toLowerCase()))return alert("Cette catégorie existe déjà.");state.categories.push({name:n,color:$("newColor").value});renderAll();renderCategoryManager();$("newCat").value=""}
 function renameCategory(i,n){n=n.trim();if(!n)return;const old=state.categories[i].name;state.categories[i].name=n;state.tasks.forEach(t=>{if(t.category===old)t.category=n});renderAll()}
 function removeCategory(i){if(state.categories.length===1)return alert("Il faut garder une catégorie.");const old=state.categories[i].name,rep=state.categories.find((_,j)=>j!==i).name;if(state.tasks.some(t=>t.category===old)&&!confirm(`Les tâches de ${old} seront déplacées vers ${rep}. Continuer ?`))return;state.tasks.forEach(t=>{if(t.category===old)t.category=rep});state.categories.splice(i,1);renderAll();renderCategoryManager()}
-
-function renderContacts(){$("contactsList").innerHTML=CONTACTS.map(([n,e])=>`<label class="contact"><input type="checkbox" class="contactCheck" value="${e}"><span><strong>${esc(n)}</strong><br><span class="hint">${e}</span></span></label>`).join("")}
-function recipients(){const a=[...document.querySelectorAll(".contactCheck:checked")].map(x=>x.value);const e=$("customEmail").value.trim();if(e)a.push(e);return a}
+function renderContacts(){$("contactsList").innerHTML=CONTACTS.map(([n,e])=>`<label class="contact"><input type="checkbox" class="contactCheck" value="${e}"><span><strong>${esc(n)}</strong><br><span class="sub">${e}</span></span></label>`).join("")}
+function recipients(){const a=[...document.querySelectorAll(".contactCheck:checked")].map(x=>x.value),extra=$("customEmail").value.trim();if(extra)a.push(extra);return a}
 async function copyText(text){try{await navigator.clipboard.writeText(text);return true}catch(e){try{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();return ok}catch(e2){return false}}}
-async function openChatGPT(){const prompt=`Rédige et mets en forme ce mail en français à partir de mon brouillon. Garde exactement le sens de ma demande, corrige les fautes et adopte un ton professionnel, naturel et cordial. Ajoute une formule d’appel adaptée et les formules de politesse nécessaires. Termine systématiquement par :\n\nCordialement,\nJérôme Barletta\n\nDonne-moi uniquement le corps du mail final prêt à envoyer, sans commentaire ni explication.\n\nObjet : ${$("mailSubject").value.trim()}\n\nMon brouillon :\n${$("mailBody").value.trim()}`;const ok=await copyText(prompt);$("mailInfo").textContent=ok?"✅ Texte copié. Colle-le dans ChatGPT, puis reviens ici avec la réponse.":"⚠️ Copie automatique refusée.";window.open("https://chatgpt.com/","_blank")}
-async function pasteFinal(){try{$("mailFinal").value=await navigator.clipboard.readText();$("mailInfo").textContent="✅ Texte collé."}catch(e){mailFinal.focus();$("mailInfo").textContent="Sur iPhone : appui long dans le champ puis « Coller »."}}
-function openMail(){const to=recipients();if(!to.length)return alert("Choisis un destinataire.");const body=$("mailFinal").value.trim()||$("mailBody").value.trim();if(!body)return alert("Ajoute le message.");window.location.href=`mailto:${to.join(",")}?subject=${encodeURIComponent($("mailSubject").value.trim())}&body=${encodeURIComponent(body)}`}
+async function openChatGPT(){const prompt=`Rédige et mets en forme ce mail en français à partir de mon brouillon. Garde exactement le sens de ma demande, corrige les fautes et adopte un ton professionnel, naturel et cordial. Ajoute une formule d’appel adaptée et les formules de politesse nécessaires. Termine systématiquement par :\n\nCordialement,\nJérôme Barletta\n\nDonne-moi uniquement le corps du mail final prêt à envoyer, sans commentaire ni explication.\n\nObjet : ${$("mailSubject").value.trim()}\n\nMon brouillon :\n${$("mailBody").value.trim()}`;const ok=await copyText(prompt);$("mailInfo").textContent=ok?"✅ Texte copié. Colle-le dans ChatGPT puis reviens ici.":"⚠️ Copie automatique refusée.";window.open("https://chatgpt.com/","_blank")}
+async function pasteFinal(){try{$("mailFinal").value=await navigator.clipboard.readText();$("mailInfo").textContent="✅ Texte collé."}catch(e){$("mailFinal").focus();$("mailInfo").textContent="Sur iPhone : appui long puis « Coller »."}}
+function openMail(){const to=recipients();if(!to.length)return alert("Choisis un destinataire.");const body=$("mailFinal").value.trim()||$("mailBody").value.trim();if(!body)return alert("Ajoute le message.");location.href=`mailto:${to.join(",")}?subject=${encodeURIComponent($("mailSubject").value.trim())}&body=${encodeURIComponent(body)}`}
 function clearMail(){$("mailSubject").value="";$("mailBody").value="";$("mailFinal").value="";$("customEmail").value="";document.querySelectorAll(".contactCheck").forEach(x=>x.checked=false);$("mailInfo").textContent=""}
-
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}));a.download=`coordo-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;state=d;renderAll();alert("Sauvegarde restaurée.")}catch(err){alert("Fichier non valide.")}};r.readAsText(f);e.target.value=""}
-
-renderContacts();renderAll();showPage("home",document.querySelector('[data-page="home"]'));
+renderContacts();renderAll();showPage("home",navFor("home"));
 </script>
 </body>
 </html>
