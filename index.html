@@ -147,12 +147,63 @@ textarea{resize:vertical;min-height:120px}
 
 .agendaCompactBar{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:center;margin-bottom:10px}.agendaCompactBar .viewSwitch{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:5px}.agendaIconBtn{width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:#fff;font-size:19px}.highlightable{-webkit-touch-callout:none;user-select:none}.highlightPalette{position:fixed;left:12px;right:12px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:1600;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 45px rgba(21,35,55,.22);padding:12px}.highlightColors{display:flex;gap:9px;flex-wrap:wrap}.highlightColor{width:38px;height:38px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}.highlightAdd{border:1px solid var(--line);background:#f8fafc;border-radius:11px;padding:9px 11px;font-weight:800}.dayDrawer{margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}.dayDrawerHead{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line)}.dayDrawerItem{padding:10px 12px;border-top:1px solid var(--line)}.dayDrawerEvent{border-radius:12px;padding:10px}.bottomnav{position:fixed!important;bottom:0!important;transform:none!important}.main{padding-bottom:calc(104px + env(safe-area-inset-bottom))!important}
 
-.namedPalette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
-.namedColor{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px;text-align:left;font-weight:750}
-.namedColorDot{width:22px;height:22px;border-radius:7px;flex:none;border:1px solid rgba(0,0,0,.08)}
-.dayPopupBody{overflow:auto;padding:12px;max-height:calc(82dvh - 70px)}
-.dayPopupEvent{border-radius:14px;padding:12px;margin-bottom:9px;border:1px solid rgba(0,0,0,.05)}
-.taskHighlightRow{margin-top:10px}
+/* === V10 - améliorations agenda / couleurs / popup / iPhone === */
+.namedPalette{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  margin-top:8px
+}
+.namedColor{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:12px;
+  padding:9px;
+  text-align:left;
+  font-weight:750
+}
+.namedColorDot{
+  width:22px;
+  height:22px;
+  border-radius:7px;
+  flex:none;
+  border:1px solid rgba(0,0,0,.08)
+}
+.dayPopupBody{
+  overflow:auto;
+  max-height:calc(78dvh - 72px);
+  padding:4px 0 0
+}
+.dayPopupEvent{
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:9px;
+  border:1px solid rgba(0,0,0,.05)
+}
+.agendaSettingsBlock{
+  padding:13px;
+  border-top:1px solid var(--line)
+}
+.agendaSettingsBlock:first-child{border-top:0}
+.agendaSettingsTitle{
+  font-size:13px;
+  font-weight:850;
+  margin-bottom:8px
+}
+.bottomnav{
+  position:fixed!important;
+  bottom:0!important;
+  transform:none!important;
+}
+.main{
+  padding-bottom:calc(108px + env(safe-area-inset-bottom))!important
+}
+@supports(height:100dvh){
+  .bottomnav{bottom:0!important}
+}
 
 </style>
 </head>
@@ -311,18 +362,7 @@ try{state=JSON.parse(localStorage.getItem(STORAGE)||"null")}catch(e){state=null}
 if(!state||!Array.isArray(state.tasks))state={tasks:[],categories:[...DEFAULT_CATEGORIES],calendars:[]};
 if(!Array.isArray(state.categories)||!state.categories.length)state.categories=[...DEFAULT_CATEGORIES];
 if(!Array.isArray(state.calendars))state.calendars=[];
-if(!Array.isArray(state.highlightColors)||!state.highlightColors.length)state.highlightColors=[
- {name:"BAC",color:"#CDECCF"},
- {name:"Parents-profs",color:"#FFF0A8"},
- {name:"Réunion coordo",color:"#CFE2FF"},
- {name:"Rattrapage",color:"#FFD6A0"},
- {name:"Formation",color:"#E5D5FF"},
- {name:"Important",color:"#FFD3DF"},
- {name:"Projet",color:"#CCEFED"},
- {name:"Administratif",color:"#E2E8F0"},
- {name:"Événement",color:"#D9E7FF"},
- {name:"Perso",color:"#DDF4D7"}
-];
+if(!Array.isArray(state.highlightColors)||!state.highlightColors.length)state.highlightColors=[{name:"Jaune",color:"#fff0a8"},{name:"Orange",color:"#ffd6a0"},{name:"Rose",color:"#ffd3df"},{name:"Violet",color:"#e5d5ff"},{name:"Bleu",color:"#cfe2ff"},{name:"Vert",color:"#cff0d8"},{name:"Turquoise",color:"#ccefed"}];
 if(!state.eventHighlights||typeof state.eventHighlights!=="object")state.eventHighlights={};
 for(const c of DEFAULT_CATEGORIES){if(!state.categories.some(x=>x.name===c.name))state.categories.push({...c})}
 state.tasks=state.tasks.map(t=>({
@@ -381,7 +421,7 @@ function taskHTML(t){
  const pc=t.priority==="urgent"?"pUrg":t.priority==="haute"?"pHigh":t.priority==="basse"?"pLow":"pNorm";
  const pn=t.priority==="urgent"?"URGENT":t.priority==="haute"?"Haute":t.priority==="basse"?"Basse":"Normale";
  const cf=conflictsFor(t).length>0;
- return `<div class="task ${done(t)?"done":""}">
+ return `<div class="task ${done(t)?"done":""} highlightable" data-event-key="${esc("task|"+t.id)}" style="background:${state.eventHighlights["task|"+t.id]||"#fff"}">
    <div class="taskGrid">
     <input class="check" type="checkbox" ${done(t)?"checked":""} onchange='toggleDone(${JSON.stringify(t.id)})'>
     <div class="bar" style="background:${c.color}"></div>
@@ -453,26 +493,44 @@ function renderQuick(){
  const open=state.tasks.filter(t=>!done(t));
  fill("quickList",open.filter(t=>t.quick).sort(smartSort),"Aucune note rapide.")
 }
-function eventKey(i){return [i.source||"",i.date||"",i.start||"",i.end||"",i.title||""].join("|")}
+function eventKey(i){return i.kind==="task"&&i.task&&i.task.id ? "task|"+i.task.id : [i.source||"",i.date||"",i.start||"",i.end||"",i.title||""].join("|")}
 function highlightFor(i){return state.eventHighlights[eventKey(i)]||""}
 let lpTimer=null,selectedAgendaDay="";
 function bindLongPress(){document.querySelectorAll(".highlightable").forEach(el=>{if(el.dataset.lp)return;el.dataset.lp="1";let start=()=>{lpTimer=setTimeout(()=>openHighlightPalette(el.dataset.eventKey),520)},cancel=()=>clearTimeout(lpTimer);el.addEventListener("touchstart",start,{passive:true});el.addEventListener("touchend",cancel,{passive:true});el.addEventListener("touchmove",cancel,{passive:true})})}
-function openHighlightPalette(key){let old=document.getElementById("highlightPalette");if(old)old.remove();let b=document.createElement("div");b.id="highlightPalette";b.className="highlightPalette";b.innerHTML=`<b>Surligner cet événement</b><div class="highlightColors" style="margin-top:9px"><button class="highlightAdd" onclick='setEventHighlight(${JSON.stringify(key)},"")'>Aucun</button>${state.highlightColors.map(c=>`<button class="highlightColor" title="${esc(c.name)}" style="background:${c.color}" onclick='setEventHighlight(${JSON.stringify(key)},${JSON.stringify(c.color)})'></button>`).join("")}<button class="highlightAdd" onclick='createHighlightColor(${JSON.stringify(key)})'>＋ Couleur</button></div>`;document.body.appendChild(b)}
-function setEventHighlight(k,c){if(c)state.eventHighlights[k]=c;else delete state.eventHighlights[k];save();document.getElementById("highlightPalette")?.remove();renderAgenda()}
-function createHighlightColor(k){let n=prompt("Nom de la couleur :","Couleur"),c=prompt("Couleur hexadécimale :","#FFD6A0");if(!c||!/^#[0-9a-fA-F]{6}$/.test(c))return;state.highlightColors.push({name:n||"Couleur",color:c});setEventHighlight(k,c)}
-
-function externalCalendarConflicts(candidate,ignoreId=null){
- if(!candidate.date||!candidate.startTime||!candidate.endTime)return [];
- const toMin=s=>{const [h,m]=s.split(":").map(Number);return h*60+m};
- const a=toMin(candidate.startTime),b=toMin(candidate.endTime);
- return getAgendaItems().filter(i=>{
-   if(i.kind==="task"&&i.task&&i.task.id===ignoreId)return false;
-   if(i.date!==candidate.date||!i.start||!i.end)return false;
-   const x=toMin(i.start),y=toMin(i.end);
-   return a<y&&b>x;
- });
+function openHighlightPalette(key){
+ let old=document.getElementById("highlightPalette");if(old)old.remove();
+ let b=document.createElement("div");
+ b.id="highlightPalette";
+ b.className="highlightPalette";
+ b.innerHTML=`<b>Surligner</b>
+ <div class="namedPalette">
+ ${state.highlightColors.map(c=>`<button class="namedColor" onclick='setEventHighlight(${JSON.stringify(key)},${JSON.stringify(c.color)})'><span class="namedColorDot" style="background:${c.color}"></span><span>${esc(c.name)}</span></button>`).join("")}
+ </div>
+ <div style="display:flex;gap:8px;margin-top:10px">
+   <button class="highlightAdd" onclick='setEventHighlight(${JSON.stringify(key)},"")'>Aucun</button>
+   <button class="highlightAdd" onclick='createHighlightColor(${JSON.stringify(key)})'>＋ Couleur</button>
+ </div>`;
+ document.body.appendChild(b)
 }
-
+function setEventHighlight(k,c){if(c)state.eventHighlights[k]=c;else delete state.eventHighlights[k];save();document.getElementById("highlightPalette")?.remove();renderAgenda()}
+function createHighlightColor(k){
+ document.getElementById("highlightPalette")?.remove();
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:80dvh">
+   <div class="modalHeader"><h3>Nouvelle couleur</h3><button class="close" onclick="closeModal()">×</button></div>
+   <div class="field"><label>Nom</label><input id="newHighlightName" placeholder="Ex. BAC, Parents-profs, Réunion coordo"></div>
+   <div class="field"><label>Couleur</label><input id="newHighlightColor" type="color" value="#FFD6A0" style="height:54px;padding:4px"></div>
+   <button class="btn primary" style="width:100%" onclick='saveNewHighlightColor(${JSON.stringify(k)})'>Créer et appliquer</button>
+ </div></div>`;
+}
+function saveNewHighlightColor(k){
+ const name=($("newHighlightName").value||"Couleur").trim();
+ const color=$("newHighlightColor").value;
+ state.highlightColors.push({name,color});
+ save();
+ closeModal();
+ if(k)setEventHighlight(k,color);
+ else openAgendaSettings();
+}$/.test(c))return;state.highlightColors.push({name:n||"Couleur",color:c});setEventHighlight(k,c)}
 function getAgendaItems(){
  const taskItems=state.tasks.filter(t=>!done(t)&&t.date).map(t=>({
    kind:"task",date:t.date,start:t.startTime||"",end:t.endTime||"",title:t.title,
@@ -542,14 +600,71 @@ function renderAgendaMonth(){
    const rows=items.filter(i=>i.date===iso);
    out+=`<div class="monthDay ${iso===todayISO()?"today":""}" onclick="openAgendaDay('${iso}')">
      <div class="monthDayNum">${d}</div>
-     ${rows.slice(0,4).map(i=>`<div class="monthEvent" style="background:${i.color}">${esc(i.title)}</div>`).join("")}
+     ${rows.slice(0,4).map(i=>{const h=highlightFor(i);return `<div class="monthEvent" style="background:${h||i.color};color:${h?"#142033":"#fff"}">${esc(i.title)}</div>`}).join("")}
    </div>`;
  }
  grid.innerHTML=out;
 }
 
-function openAgendaDay(iso){selectedAgendaDay=selectedAgendaDay===iso?"":iso;let r=$("agendaDayDrawer");if(!selectedAgendaDay){r.innerHTML="";return}let rows=getAgendaItems().filter(i=>i.date===iso),lab=new Intl.DateTimeFormat("fr-FR",{weekday:"long",day:"numeric",month:"long"}).format(parseISO(iso));r.innerHTML=`<div class="dayDrawer"><div class="dayDrawerHead"><strong>${lab}</strong><button onclick="selectedAgendaDay='';$('agendaDayDrawer').innerHTML=''">×</button></div>${rows.length?rows.map(i=>i.kind==="task"?taskHTML(i.task):`<div class="dayDrawerItem"><div class="dayDrawerEvent highlightable" data-event-key="${esc(eventKey(i))}" style="background:${highlightFor(i)||'#fff'}"><div class="eventTitle">${esc(i.title)}</div><div class="eventMeta">${i.start?i.start+(i.end?'–'+i.end:'')+' · ':''}${esc(i.source)}</div></div></div>`).join(''):'<div class="empty">Aucun événement ce jour.</div>'}<div style="padding:10px"><button class="btn primary" onclick="openTaskModal('${iso}')">+ Ajouter une tâche</button></div></div>`;setTimeout(bindLongPress,20)}
-function openAgendaSettings(){$("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Agenda & sauvegarde</h3><button class="close" onclick="closeModal()">×</button></div><button class="btn primary" style="width:100%;margin-bottom:8px" onclick="openCalendarManager()">+ Ajouter un calendrier</button><div id="calendarSources"></div><div style="margin:14px 0"><b>Couleurs de surlignage</b><div class="highlightColors" style="margin-top:8px">${state.highlightColors.map(c=>`<span class="highlightColor" style="background:${c.color}" title="${esc(c.name)}"></span>`).join('')}<button class="highlightAdd" onclick="createHighlightColor('')">＋ Couleur</button></div></div><button class="btn soft" style="width:100%;margin-bottom:8px" onclick="exportBackup()">💾 Sauvegarder dans Fichiers</button><button class="btn soft" style="width:100%" onclick="$('restoreFile').click()">📂 Restaurer depuis Fichiers</button></div></div>`;renderCalendarSources()}
+function openAgendaDay(iso){
+ selectedAgendaDay=iso;
+ const rows=getAgendaItems().filter(i=>i.date===iso);
+ const lab=new Intl.DateTimeFormat("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(parseISO(iso));
+ $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:82dvh">
+   <div class="modalHeader"><h3>${lab}</h3><button class="close" onclick="closeModal()">×</button></div>
+   <div class="dayPopupBody">
+     ${rows.length?rows.map(i=>i.kind==="task"?taskHTML(i.task):`<div class="dayPopupEvent highlightable" data-event-key="${esc(eventKey(i))}" style="background:${highlightFor(i)||"#fff"}">
+       <div class="eventTitle">${esc(i.title)}</div>
+       <div class="eventMeta">${i.start?i.start+(i.end?"–"+i.end:"")+" · ":""}${esc(i.source)}${i.location?" · "+esc(i.location):""}</div>
+     </div>`).join(""):'<div class="empty">Aucun événement ce jour.</div>'}
+     <button class="btn primary" style="width:100%;margin-top:8px" onclick="closeModal();openTaskModal('${iso}')">+ Ajouter une tâche</button>
+   </div>
+ </div></div>`;
+ setTimeout(bindLongPress,20)
+}
+function openAgendaSettings(){
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh">
+   <div class="modalHeader"><h3>Agenda & sauvegarde</h3><button class="close" onclick="closeModal()">×</button></div>
+
+   <div class="agendaSettingsBlock">
+     <div class="agendaSettingsTitle">Calendriers</div>
+     <div id="calendarSources"></div>
+     <button class="btn primary" style="width:100%;margin-top:8px" onclick="openCalendarManager()">+ Ajouter un calendrier</button>
+   </div>
+
+   <div class="agendaSettingsBlock">
+     <div class="agendaSettingsTitle">Couleurs de surlignage</div>
+     <div class="namedPalette">
+       ${state.highlightColors.map((c,i)=>`<button class="namedColor" onclick="editHighlightColor(${i})"><span class="namedColorDot" style="background:${c.color}"></span><span>${esc(c.name)}</span></button>`).join("")}
+     </div>
+     <button class="highlightAdd" style="width:100%;margin-top:8px" onclick="createHighlightColor('')">＋ Nouvelle couleur</button>
+   </div>
+
+   <div class="agendaSettingsBlock">
+     <div class="agendaSettingsTitle">Sauvegarde</div>
+     <button class="btn soft" style="width:100%;margin-bottom:8px" onclick="exportBackup()">💾 Sauvegarder dans Fichiers</button>
+     <button class="btn soft" style="width:100%" onclick="$('restoreFile').click()">📂 Restaurer depuis Fichiers</button>
+   </div>
+ </div></div>`;
+ renderCalendarSources()
+}
+function editHighlightColor(i){
+ const c=state.highlightColors[i];
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:80dvh">
+   <div class="modalHeader"><h3>Modifier la couleur</h3><button class="close" onclick="closeModal()">×</button></div>
+   <div class="field"><label>Nom</label><input id="editHighlightName" value="${esc(c.name)}"></div>
+   <div class="field"><label>Couleur</label><input id="editHighlightColor" type="color" value="${c.color}" style="height:54px;padding:4px"></div>
+   <button class="btn primary" style="width:100%" onclick="saveEditedHighlightColor(${i})">Enregistrer</button>
+ </div></div>`;
+}
+function saveEditedHighlightColor(i){
+ const old=state.highlightColors[i].color;
+ const color=$("editHighlightColor").value;
+ const name=($("editHighlightName").value||"Couleur").trim();
+ state.highlightColors[i]={name,color};
+ Object.keys(state.eventHighlights).forEach(k=>{if(state.eventHighlights[k]===old)state.eventHighlights[k]=color});
+ save();openAgendaSettings();renderAgenda()
+}
 function renderCalendarSources(){
  const root=$("calendarSources");if(!root)return;
  if(!state.calendars.length){root.innerHTML="";return}
@@ -615,6 +730,8 @@ function exportBackup(){
    exportedAt:new Date().toISOString(),
    tasks:state.tasks,
    categories:state.categories,
+   highlightColors:state.highlightColors,
+   eventHighlights:state.eventHighlights,
    calendars:state.calendars.map(c=>({name:c.name,color:c.color,enabled:c.enabled!==false,url:null}))
  };
  const a=document.createElement("a");
@@ -631,6 +748,8 @@ function restoreBackup(e){
      if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;
      state.tasks=d.tasks;
      state.categories=d.categories;
+     if(Array.isArray(d.highlightColors))state.highlightColors=d.highlightColors;
+     if(d.eventHighlights&&typeof d.eventHighlights==="object")state.eventHighlights=d.eventHighlights;
      const previousUrls=new Map(state.calendars.map(c=>[c.name,c.url]));
      state.calendars=Array.isArray(d.calendars)?d.calendars.map(c=>({
        name:c.name,color:c.color||"#64748b",enabled:c.enabled!==false,
@@ -642,7 +761,7 @@ function restoreBackup(e){
  r.readAsText(f);e.target.value="";
 }
 
-function renderAll(){renderFilters();renderHome();renderAllTasks();renderQuick();renderAgenda();renderCalendarSources();save()}
+function renderAll(){renderFilters();renderHome();renderAllTasks();renderQuick();renderAgenda();renderCalendarSources();save();setTimeout(bindLongPress,20)}
 
 function toggleDone(id){const t=state.tasks.find(x=>x.id===id);if(t){t.status=done(t)?"À faire":"Terminé";renderAll()}}
 function deleteTask(id){const t=state.tasks.find(x=>x.id===id);if(t&&confirm(`Supprimer « ${t.title} » ?`)){state.tasks=state.tasks.filter(x=>x.id!==id);renderAll()}}
@@ -676,6 +795,7 @@ function openTaskModal(date="",task=null){
     <div class="field"><label>Heure fin</label><input id="mEnd" type="time" value="${t.endTime||""}" onchange="checkConflict()"></div>
    </div>
    <div id="conflictBox" class="conflictBox"></div>
+   <div class="field"><label>Surlignage</label><select id="mHighlight"><option value="">Aucun</option>${state.highlightColors.map(c=>`<option value="${c.color}" ${state.eventHighlights["task|"+t.id]===c.color?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>
    <div class="field"><label>Notes</label><textarea id="mNotes" placeholder="Détails, lien, personnes à contacter…">${esc(t.notes||"")}</textarea></div>
    <div class="field"><label><input id="mQuick" type="checkbox" style="width:auto;min-height:0" ${t.quick?"checked":""}> Garder aussi dans Notes</label></div>
    <div class="modalFooter"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick="saveTask()">Enregistrer</button></div>
@@ -692,18 +812,24 @@ function toggleTime(){const all=$("mAllDay");if(!all)return;$("mStart").disabled
 function modalCandidate(){return{id:editingId,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mStart").value,endTime:$("mEnd").value,status:$("mStatus").value}}
 function checkConflict(){
  const box=$("conflictBox");if(!box)return;const c=modalCandidate();
- if(c.startTime&&c.endTime&&timeMin(c.endTime)<=timeMin(c.startTime)){box.style.display="block";box.textContent="⚠️ L’heure de fin doit être après l’heure de début.";return}
- const arr=conflictsFor(c);
- if(arr.length){box.style.display="block";box.innerHTML="⚠️ Chevauchement avec "+arr.map(t=>`« ${esc(t.title)} » (${t.startTime}–${t.endTime})`).join(", ")+". Tu peux quand même enregistrer."}
- else box.style.display="none"
+ if(c.startTime&&c.endTime&&timeMin(c.endTime)<=timeMin(c.startTime)){
+   box.style.display="block";box.textContent="⚠️ L’heure de fin doit être après l’heure de début.";return
+ }
+ const arr=externalCalendarConflicts(c,editingId);
+ if(arr.length){
+   box.style.display="block";
+   box.innerHTML="⚠️ Chevauchement avec :<br>"+arr.map(i=>`• ${esc(i.title)} ${i.start||""}${i.end?`–${i.end}`:""} · ${esc(i.source||"")}`).join("<br>")+"<br><br>Tu pourras quand même enregistrer.";
+ }else box.style.display="none"
 }
 function saveTask(){
  const title=$("mTitle").value.trim();if(!title)return alert("Ajoute un titre.");
  if(!$("mAllDay").checked&&$("mStart").value&&$("mEnd").value&&timeMin($("mEnd").value)<=timeMin($("mStart").value))return alert("L’heure de fin doit être après l’heure de début.");
  const data={id:editingId||String(Date.now()+Math.random()),title,category:$("mCategory").value,type:$("mType").value,status:$("mStatus").value,priority:$("mPriority").value,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mAllDay").checked?"":$("mStart").value,endTime:$("mAllDay").checked?"":$("mEnd").value,notes:$("mNotes").value.trim(),quick:$("mQuick").checked,createdAt:editingId?(state.tasks.find(t=>t.id===editingId)?.createdAt||Date.now()):Date.now()};
- const cf=conflictsFor(data);
- if(cf.length&&!confirm("⚠️ Cette tâche chevauche :\n\n"+cf.map(t=>`${t.title} (${t.startTime}–${t.endTime})`).join("\n")+"\n\nEnregistrer quand même ?"))return;
+ const cf=externalCalendarConflicts(data,editingId);
+ if(cf.length&&!confirm("⚠️ Conflit d’horaire avec :\n\n"+cf.map(i=>`${i.title} (${i.start||"?"}–${i.end||"?"}) · ${i.source||""}`).join("\n")+"\n\nAjouter quand même ?"))return;
  if(editingId)state.tasks=state.tasks.map(t=>t.id===editingId?data:t);else state.tasks.push(data);
+ const h=$("mHighlight")?.value||"";
+ if(h)state.eventHighlights["task|"+data.id]=h;else delete state.eventHighlights["task|"+data.id];
  editingId=null;closeModal();renderAll()
 }
 function closeModal(){editingId=null;$("modalRoot").innerHTML=""}
