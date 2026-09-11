@@ -144,6 +144,8 @@ textarea{resize:vertical;min-height:120px}
   .monthHeader strong{font-size:14px}
 }
 
+
+.agendaCompactBar{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:center;margin-bottom:10px}.agendaCompactBar .viewSwitch{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:5px}.agendaIconBtn{width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:#fff;font-size:19px}.highlightable{-webkit-touch-callout:none;user-select:none}.highlightPalette{position:fixed;left:12px;right:12px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:1600;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 45px rgba(21,35,55,.22);padding:12px}.highlightColors{display:flex;gap:9px;flex-wrap:wrap}.highlightColor{width:38px;height:38px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}.highlightAdd{border:1px solid var(--line);background:#f8fafc;border-radius:11px;padding:9px 11px;font-weight:800}.dayDrawer{margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}.dayDrawerHead{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line)}.dayDrawerItem{padding:10px 12px;border-top:1px solid var(--line)}.dayDrawerEvent{border-radius:12px;padding:10px}.bottomnav{position:fixed!important;bottom:0!important;transform:none!important}.main{padding-bottom:calc(104px + env(safe-area-inset-bottom))!important}
 </style>
 </head>
 <body>
@@ -228,45 +230,7 @@ textarea{resize:vertical;min-height:120px}
 
   
   
-  <section id="page-agenda" class="page">
-    <div class="topbar">
-      <div class="hello"><h1>Agenda</h1><div class="date">Tâches + calendriers externes</div></div>
-      <button class="btn primary" onclick="openTaskModal()">+ Tâche</button>
-    </div>
-
-    <div class="calendarTools">
-      <button class="btn soft" onclick="openCalendarManager()">⚙️ Mes calendriers</button>
-      <button class="btn soft" onclick="syncCalendars()">↻ Synchroniser</button>
-      <button class="btn soft" onclick="exportBackup()">💾 Sauvegarder dans Fichiers</button>
-      <button class="btn soft" onclick="$('restoreFile').click()">📂 Restaurer depuis Fichiers</button>
-    </div>
-
-    <div class="viewSwitch">
-      <button id="agendaListBtn" class="btn activeView" onclick="setAgendaView('list')">☷ Liste</button>
-      <button id="agendaMonthBtn" class="btn" onclick="setAgendaView('month')">▦ Mois</button>
-    </div>
-
-    <div id="calendarSources" class="calendarSources"></div>
-    <div id="calendarSyncInfo" class="secretHint">Les URL privées ne sont jamais placées dans GitHub ni dans les sauvegardes.</div>
-
-    <div id="agendaListView" style="margin-top:12px">
-      <div id="agendaList"></div>
-    </div>
-
-    <div id="agendaMonthView" style="display:none;margin-top:12px">
-      <div class="monthWrap">
-        <div class="monthHeader">
-          <button class="btn" onclick="changeAgendaMonth(-1)">‹</button>
-          <strong id="agendaMonthTitle"></strong>
-          <button class="btn" onclick="changeAgendaMonth(1)">›</button>
-        </div>
-        <div class="monthWeek">
-          <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
-        </div>
-        <div id="agendaMonthGrid" class="monthGrid"></div>
-      </div>
-    </div>
-  </section>
+  <section id="page-agenda" class="page"><div class="topbar"><div class="hello"><h1>Agenda</h1><div class="date">Tâches + calendriers externes</div></div><button class="btn primary" onclick="openTaskModal()">+ Tâche</button></div><div class="agendaCompactBar"><div class="viewSwitch"><button id="agendaListBtn" class="btn activeView" onclick="setAgendaView('list')">☷ Liste</button><button id="agendaMonthBtn" class="btn" onclick="setAgendaView('month')">▦ Mois</button></div><button class="agendaIconBtn" onclick="syncCalendars()">↻</button><button class="agendaIconBtn" onclick="openAgendaSettings()">⚙️</button></div><div id="calendarSyncInfo" class="secretHint" style="display:none"></div><div id="agendaListView"><div id="agendaList"></div></div><div id="agendaMonthView" style="display:none"><div class="monthWrap"><div class="monthHeader"><button class="btn" onclick="changeAgendaMonth(-1)">‹</button><strong id="agendaMonthTitle"></strong><button class="btn" onclick="changeAgendaMonth(1)">›</button></div><div class="monthWeek"><div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div></div><div id="agendaMonthGrid" class="monthGrid"></div></div><div id="agendaDayDrawer"></div></div></section>
 
 
 
@@ -339,6 +303,8 @@ try{state=JSON.parse(localStorage.getItem(STORAGE)||"null")}catch(e){state=null}
 if(!state||!Array.isArray(state.tasks))state={tasks:[],categories:[...DEFAULT_CATEGORIES],calendars:[]};
 if(!Array.isArray(state.categories)||!state.categories.length)state.categories=[...DEFAULT_CATEGORIES];
 if(!Array.isArray(state.calendars))state.calendars=[];
+if(!Array.isArray(state.highlightColors)||!state.highlightColors.length)state.highlightColors=[{name:"Jaune",color:"#fff0a8"},{name:"Orange",color:"#ffd6a0"},{name:"Rose",color:"#ffd3df"},{name:"Violet",color:"#e5d5ff"},{name:"Bleu",color:"#cfe2ff"},{name:"Vert",color:"#cff0d8"},{name:"Turquoise",color:"#ccefed"}];
+if(!state.eventHighlights||typeof state.eventHighlights!=="object")state.eventHighlights={};
 for(const c of DEFAULT_CATEGORIES){if(!state.categories.some(x=>x.name===c.name))state.categories.push({...c})}
 state.tasks=state.tasks.map(t=>({
  id:t.id||String(Date.now()+Math.random()),
@@ -468,6 +434,13 @@ function renderQuick(){
  const open=state.tasks.filter(t=>!done(t));
  fill("quickList",open.filter(t=>t.quick).sort(smartSort),"Aucune note rapide.")
 }
+function eventKey(i){return [i.source||"",i.date||"",i.start||"",i.end||"",i.title||""].join("|")}
+function highlightFor(i){return state.eventHighlights[eventKey(i)]||""}
+let lpTimer=null,selectedAgendaDay="";
+function bindLongPress(){document.querySelectorAll(".highlightable").forEach(el=>{if(el.dataset.lp)return;el.dataset.lp="1";let start=()=>{lpTimer=setTimeout(()=>openHighlightPalette(el.dataset.eventKey),520)},cancel=()=>clearTimeout(lpTimer);el.addEventListener("touchstart",start,{passive:true});el.addEventListener("touchend",cancel,{passive:true});el.addEventListener("touchmove",cancel,{passive:true})})}
+function openHighlightPalette(key){let old=document.getElementById("highlightPalette");if(old)old.remove();let b=document.createElement("div");b.id="highlightPalette";b.className="highlightPalette";b.innerHTML=`<b>Surligner cet événement</b><div class="highlightColors" style="margin-top:9px"><button class="highlightAdd" onclick='setEventHighlight(${JSON.stringify(key)},"")'>Aucun</button>${state.highlightColors.map(c=>`<button class="highlightColor" title="${esc(c.name)}" style="background:${c.color}" onclick='setEventHighlight(${JSON.stringify(key)},${JSON.stringify(c.color)})'></button>`).join("")}<button class="highlightAdd" onclick='createHighlightColor(${JSON.stringify(key)})'>＋ Couleur</button></div>`;document.body.appendChild(b)}
+function setEventHighlight(k,c){if(c)state.eventHighlights[k]=c;else delete state.eventHighlights[k];save();document.getElementById("highlightPalette")?.remove();renderAgenda()}
+function createHighlightColor(k){let n=prompt("Nom de la couleur :","Couleur"),c=prompt("Couleur hexadécimale :","#FFD6A0");if(!c||!/^#[0-9a-fA-F]{6}$/.test(c))return;state.highlightColors.push({name:n||"Couleur",color:c});setEventHighlight(k,c)}
 function getAgendaItems(){
  const taskItems=state.tasks.filter(t=>!done(t)&&t.date).map(t=>({
    kind:"task",date:t.date,start:t.startTime||"",end:t.endTime||"",title:t.title,
@@ -494,9 +467,9 @@ function renderAgenda(){
        <div class="agendaDate">${date===todayISO()?"Aujourd’hui":date===addDaysISO(1)?"Demain":fmtDate(date)}</div>
        <div class="sectionCard">
          ${rows.map(i=>i.kind==="task" ? taskHTML(i.task) : `
-           <div class="eventCard">
+           <div class="eventCard highlightable" data-event-key="${esc(eventKey(i))}" style="background:${highlightFor(i)||'#fff'}">
              <div class="eventRow">
-               <div class="eventBar" style="background:${i.color}"></div>
+               <div class="eventBar" style="background:${highlightFor(i)||i.color};color:${highlightFor(i)?'#142033':'#fff'}"></div>
                <div>
                  <div class="eventTitle">${esc(i.title)}</div>
                  <div class="eventMeta">${i.start?`${i.start}${i.end?`–${i.end}`:""} · `:""}${esc(i.source)}${i.location?` · ${esc(i.location)}`:""}</div>
@@ -507,7 +480,7 @@ function renderAgenda(){
      </div>`).join("");
  }
  renderCalendarSources();
- renderAgendaMonth();
+ renderAgendaMonth();setTimeout(bindLongPress,20);
 }
 function setAgendaView(view){
  agendaView=view;
@@ -535,7 +508,7 @@ function renderAgendaMonth(){
  for(let d=1;d<=count;d++){
    const iso=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
    const rows=items.filter(i=>i.date===iso);
-   out+=`<div class="monthDay ${iso===todayISO()?"today":""}" onclick="openTaskModal('${iso}')">
+   out+=`<div class="monthDay ${iso===todayISO()?"today":""}" onclick="openAgendaDay('${iso}')">
      <div class="monthDayNum">${d}</div>
      ${rows.slice(0,4).map(i=>`<div class="monthEvent" style="background:${i.color}">${esc(i.title)}</div>`).join("")}
    </div>`;
@@ -543,6 +516,8 @@ function renderAgendaMonth(){
  grid.innerHTML=out;
 }
 
+function openAgendaDay(iso){selectedAgendaDay=selectedAgendaDay===iso?"":iso;let r=$("agendaDayDrawer");if(!selectedAgendaDay){r.innerHTML="";return}let rows=getAgendaItems().filter(i=>i.date===iso),lab=new Intl.DateTimeFormat("fr-FR",{weekday:"long",day:"numeric",month:"long"}).format(parseISO(iso));r.innerHTML=`<div class="dayDrawer"><div class="dayDrawerHead"><strong>${lab}</strong><button onclick="selectedAgendaDay='';$('agendaDayDrawer').innerHTML=''">×</button></div>${rows.length?rows.map(i=>i.kind==="task"?taskHTML(i.task):`<div class="dayDrawerItem"><div class="dayDrawerEvent highlightable" data-event-key="${esc(eventKey(i))}" style="background:${highlightFor(i)||'#fff'}"><div class="eventTitle">${esc(i.title)}</div><div class="eventMeta">${i.start?i.start+(i.end?'–'+i.end:'')+' · ':''}${esc(i.source)}</div></div></div>`).join(''):'<div class="empty">Aucun événement ce jour.</div>'}<div style="padding:10px"><button class="btn primary" onclick="openTaskModal('${iso}')">+ Ajouter une tâche</button></div></div>`;setTimeout(bindLongPress,20)}
+function openAgendaSettings(){$("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Agenda & sauvegarde</h3><button class="close" onclick="closeModal()">×</button></div><button class="btn primary" style="width:100%;margin-bottom:8px" onclick="openCalendarManager()">+ Ajouter un calendrier</button><div id="calendarSources"></div><div style="margin:14px 0"><b>Couleurs de surlignage</b><div class="highlightColors" style="margin-top:8px">${state.highlightColors.map(c=>`<span class="highlightColor" style="background:${c.color}" title="${esc(c.name)}"></span>`).join('')}<button class="highlightAdd" onclick="createHighlightColor('')">＋ Couleur</button></div></div><button class="btn soft" style="width:100%;margin-bottom:8px" onclick="exportBackup()">💾 Sauvegarder dans Fichiers</button><button class="btn soft" style="width:100%" onclick="$('restoreFile').click()">📂 Restaurer depuis Fichiers</button></div></div>`;renderCalendarSources()}
 function renderCalendarSources(){
  const root=$("calendarSources");if(!root)return;
  if(!state.calendars.length){root.innerHTML="";return}
@@ -587,7 +562,7 @@ function removeCalendar(i){if(confirm(`Supprimer le calendrier « ${state.calend
 async function syncCalendars(){
  const info=$("calendarSyncInfo");
  if(!state.calendars.length){info.textContent="Ajoute d’abord un calendrier avec son URL .ics.";return}
- info.textContent="Synchronisation en cours…";
+ info.style.display="block";info.textContent="Synchronisation en cours…";
  let ok=0,fail=0;
  for(const c of state.calendars){
    if(c.enabled===false)continue;
