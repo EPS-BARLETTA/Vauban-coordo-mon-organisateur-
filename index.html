@@ -530,7 +530,7 @@ function saveNewHighlightColor(k){
  closeModal();
  if(k)setEventHighlight(k,color);
  else openAgendaSettings();
-}$/.test(c))return;state.highlightColors.push({name:n||"Couleur",color:c});setEventHighlight(k,c)}
+}
 function getAgendaItems(){
  const taskItems=state.tasks.filter(t=>!done(t)&&t.date).map(t=>({
    kind:"task",date:t.date,start:t.startTime||"",end:t.endTime||"",title:t.title,
