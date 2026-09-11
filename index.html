@@ -289,6 +289,15 @@ textarea{resize:vertical;min-height:120px}
 .contactManageActions button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 8px;font-size:11px;font-weight:700}
 .contactManagerAdd{margin-top:10px}
 
+
+/* V10.6 - événements synchronisés masquables */
+.hiddenEventsList{display:grid;gap:8px}
+.hiddenEventRow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.hiddenEventRow:nth-child(even){background:#f3f5f7}
+.hiddenEventTitle{font-weight:800;font-size:13px}
+.hiddenEventMeta{font-size:11px;color:var(--muted);margin-top:3px}
+.hiddenEventRow button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 9px;font-size:11px;font-weight:700}
+
 </style>
 </head>
 <body>
@@ -458,6 +467,7 @@ if(!Array.isArray(state.categories)||!state.categories.length)state.categories=[
 if(!Array.isArray(state.calendars))state.calendars=[];
 if(!Array.isArray(state.highlightColors)||!state.highlightColors.length)state.highlightColors=[{name:"Jaune",color:"#fff0a8"},{name:"Orange",color:"#ffd6a0"},{name:"Rose",color:"#ffd3df"},{name:"Violet",color:"#e5d5ff"},{name:"Bleu",color:"#cfe2ff"},{name:"Vert",color:"#cff0d8"},{name:"Turquoise",color:"#ccefed"}];
 if(!state.eventHighlights||typeof state.eventHighlights!=="object")state.eventHighlights={};
+if(!Array.isArray(state.hiddenCalendarEvents))state.hiddenCalendarEvents=[];
 if(!Array.isArray(state.contacts)||!state.contacts.length){
   state.contacts=DEFAULT_CONTACTS.map(([name,email])=>({id:String(Date.now()+Math.random()),name,email}));
 }
@@ -617,6 +627,16 @@ function renderQuick(){
  fillCompact("quickList",open.filter(t=>t.quick).sort(smartSort),"Aucune note rapide.")
 }
 function eventKey(i){return i.kind==="task"&&i.task&&i.task.id ? "task|"+i.task.id : [i.source||"",i.date||"",i.start||"",i.end||"",i.title||""].join("|")}
+function isCalendarEventHidden(i){return i.kind==="event"&&state.hiddenCalendarEvents.includes(eventKey(i))}
+function hideCalendarEvent(key){
+ if(!state.hiddenCalendarEvents.includes(key))state.hiddenCalendarEvents.push(key);
+ save();closeModal();renderAgenda();
+}
+function unhideCalendarEvent(key){
+ state.hiddenCalendarEvents=state.hiddenCalendarEvents.filter(k=>k!==key);
+ save();renderAgenda();openHiddenEventsManager();
+}
+
 function highlightFor(i){return state.eventHighlights[eventKey(i)]||""}
 let lpTimer=null,selectedAgendaDay="";
 function bindLongPress(){document.querySelectorAll(".highlightable").forEach(el=>{if(el.dataset.lp)return;el.dataset.lp="1";let fired=false;let start=()=>{fired=false;lpTimer=setTimeout(()=>{fired=true;el.dataset.longPressed="1";openHighlightPalette(el.dataset.eventKey)},520)},cancel=()=>clearTimeout(lpTimer);el.addEventListener("touchstart",start,{passive:true});el.addEventListener("touchend",()=>{cancel();if(fired)setTimeout(()=>delete el.dataset.longPressed,450)},{passive:true});el.addEventListener("touchmove",cancel,{passive:true})})}
@@ -666,7 +686,7 @@ function getAgendaItems(){
      eventItems.push({kind:"event",date:e.date,start:e.start||"",end:e.end||"",title:e.title||"Événement",source:c.name,color:c.color||"#64748b",location:e.location||""});
    }
  }
- return [...taskItems,...eventItems].filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)||(a.start||"").localeCompare(b.start||""));
+ return [...taskItems,...eventItems].filter(x=>x.date&&!isCalendarEventHidden(x)).sort((a,b)=>a.date.localeCompare(b.date)||(a.start||"").localeCompare(b.start||""));
 }
 function agendaCompactHTML(i){
  const h=highlightFor(i), bg=h||"#fff", bar=h||i.color;
@@ -694,6 +714,7 @@ function openAgendaItem(key){
      </div></div>
      ${i.location?`<div class="agendaDetailInfo"><b>Lieu</b><br>${esc(i.location)}</div>`:""}
      <button class="btn soft" style="width:100%;margin-top:14px" onclick='closeModal();openHighlightPalette(${JSON.stringify(eventKey(i))})'>🎨 Surligner / changer la couleur</button>
+     <button class="btn soft" style="width:100%;margin-top:8px" onclick='if(confirm("Masquer cet événement uniquement dans Coordo ?"))hideCalendarEvent(${JSON.stringify(eventKey(i))})'>👁️ Masquer dans Coordo</button>
    </div>
  </div></div>`;
 }
@@ -782,6 +803,10 @@ function openAgendaSettings(){
    </div>
 
    <div class="agendaSettingsBlock">
+     <div class="agendaSettingsTitle">Événements masqués</div>
+     <button class="btn soft" style="width:100%" onclick="openHiddenEventsManager()">👁️ Voir les événements masqués (${state.hiddenCalendarEvents.length})</button>
+   </div>
+   <div class="agendaSettingsBlock">
      <div class="agendaSettingsTitle">Sauvegarde</div>
      <button class="btn soft" style="width:100%;margin-bottom:8px" onclick="exportBackup()">💾 Sauvegarder dans Fichiers</button>
      <button class="btn soft" style="width:100%" onclick="$('restoreFile').click()">📂 Restaurer depuis Fichiers</button>
@@ -789,6 +814,33 @@ function openAgendaSettings(){
  </div></div>`;
  renderCalendarSources()
 }
+
+function allExternalAgendaItemsIncludingHidden(){
+ const out=[];
+ for(const c of state.calendars){
+   for(const e of (c.events||[])){
+     out.push({kind:"event",date:e.date,start:e.start||"",end:e.end||"",title:e.title||"Événement",source:c.name,color:c.color||"#64748b",location:e.location||""});
+   }
+ }
+ return out;
+}
+function openHiddenEventsManager(){
+ const hidden=allExternalAgendaItemsIncludingHidden().filter(i=>state.hiddenCalendarEvents.includes(eventKey(i)));
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh">
+   <div class="modalHeader"><h3>Événements masqués</h3><button class="close" onclick="openAgendaSettings()">×</button></div>
+   <div class="hiddenEventsList">
+     ${hidden.length?hidden.map(i=>`
+       <div class="hiddenEventRow">
+         <div>
+           <div class="hiddenEventTitle">${esc(i.title)}</div>
+           <div class="hiddenEventMeta">${fmtDate(i.date)}${i.start?` · ${i.start}${i.end?`–${i.end}`:""}`:""} · ${esc(i.source)}</div>
+         </div>
+         <button onclick='unhideCalendarEvent(${JSON.stringify(eventKey(i))})'>Réafficher</button>
+       </div>`).join(""):'<div class="empty">Aucun événement masqué.</div>'}
+   </div>
+ </div></div>`;
+}
+
 function editHighlightColor(i){
  const c=state.highlightColors[i];
  $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:80dvh">
@@ -873,6 +925,7 @@ function exportBackup(){
    categories:state.categories,
    highlightColors:state.highlightColors,
    eventHighlights:state.eventHighlights,
+   hiddenCalendarEvents:state.hiddenCalendarEvents,
    contacts:state.contacts,
    selectedContactIds:state.selectedContactIds,
    calendars:state.calendars.map(c=>({name:c.name,color:c.color,enabled:c.enabled!==false,url:null}))
@@ -893,6 +946,7 @@ function restoreBackup(e){
      state.categories=d.categories;
      if(Array.isArray(d.highlightColors))state.highlightColors=d.highlightColors;
      if(d.eventHighlights&&typeof d.eventHighlights==="object")state.eventHighlights=d.eventHighlights;
+     if(Array.isArray(d.hiddenCalendarEvents))state.hiddenCalendarEvents=d.hiddenCalendarEvents;
      if(Array.isArray(d.contacts))state.contacts=d.contacts;
      if(Array.isArray(d.selectedContactIds))state.selectedContactIds=d.selectedContactIds;
      const previousUrls=new Map(state.calendars.map(c=>[c.name,c.url]));
