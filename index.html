@@ -389,6 +389,14 @@ textarea{resize:vertical;min-height:120px}
   .contactSheetPanel{max-width:560px;border-radius:20px;max-height:82vh}
 }
 
+
+/* V10.9 - Groupes de contacts */
+.mailGroupsBlock{margin-bottom:10px}.mailGroupsTitle{font-size:11px;font-weight:800;color:#5c687b;margin-bottom:7px}
+.mailGroupChips{display:flex;gap:7px;flex-wrap:wrap}.mailGroupChip{border:1px solid #dce7ff;background:#eef4ff;color:#244fae;border-radius:999px;padding:8px 11px;font-size:12px;font-weight:800}.mailGroupChip.active{background:#dce8ff;border-color:#b9d0ff}
+.groupTabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}.groupTabs button{border:1px solid var(--line);background:#fff;border-radius:11px;padding:9px;font-size:12px;font-weight:800}.groupTabs button.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.groupList{border:1px solid var(--line);border-radius:14px;overflow:hidden}.groupRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 12px}.groupRow:nth-child(even){background:#f3f5f7}
+.groupName{font-weight:850;font-size:13px}.groupMeta{font-size:11px;color:var(--muted);margin-top:2px}.groupActions{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}.groupActions button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 8px;font-size:11px;font-weight:700}
+.groupMemberList{border:1px solid var(--line);border-radius:14px;overflow:hidden}.groupMemberRow{display:flex;align-items:center;gap:10px;padding:10px 12px}.groupMemberRow:nth-child(even){background:#f3f5f7}.groupMemberRow input{width:20px;height:20px;min-height:0}
 </style>
 </head>
 <body>
@@ -495,6 +503,10 @@ textarea{resize:vertical;min-height:120px}
     <div class="topbar"><div class="hello"><h1>Mail</h1><div class="date">Brouillon → ChatGPT → Mail</div></div></div>
     <div class="mailGrid">
       <div class="card" style="padding:14px">
+        <div class="mailGroupsBlock">
+          <div class="mailGroupsTitle">Groupes</div>
+          <div id="mailGroupChips" class="mailGroupChips"></div>
+        </div>
         <div class="field">
           <label>Destinataires</label>
           <div class="mailRecipientStack">
@@ -561,6 +573,7 @@ if(!Array.isArray(state.contacts)||!state.contacts.length){
   state.contacts=DEFAULT_CONTACTS.map(([name,email])=>({id:String(Date.now()+Math.random()),name,email}));
 }
 if(!Array.isArray(state.selectedContactIds))state.selectedContactIds=[];
+if(!Array.isArray(state.contactGroups))state.contactGroups=[];
 for(const c of DEFAULT_CATEGORIES){if(!state.categories.some(x=>x.name===c.name))state.categories.push({...c})}
 state.tasks=state.tasks.map(t=>({
  id:t.id||String(Date.now()+Math.random()),
@@ -580,7 +593,7 @@ function showPage(name,el){
  document.querySelectorAll("[data-page]").forEach(x=>x.classList.remove("active"));
  document.querySelectorAll(`[data-page="${name}"]`).forEach(x=>x.classList.add("active"));
  if(name==="agenda"){renderAgenda();setAgendaView(agendaView);}
- if(name==="mail")renderContacts();
+ if(name==="mail"){renderContacts();renderMailGroups();}
  window.scrollTo({top:0,behavior:"smooth"});
 }
 function todayISO(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
@@ -1018,6 +1031,7 @@ function exportBackup(){
    hiddenCalendarEvents:state.hiddenCalendarEvents,
    contacts:state.contacts,
    selectedContactIds:state.selectedContactIds,
+   contactGroups:state.contactGroups,
    calendars:state.calendars.map(c=>({name:c.name,color:c.color,enabled:c.enabled!==false,url:null}))
  };
  const a=document.createElement("a");
@@ -1039,6 +1053,7 @@ function restoreBackup(e){
      if(Array.isArray(d.hiddenCalendarEvents))state.hiddenCalendarEvents=d.hiddenCalendarEvents;
      if(Array.isArray(d.contacts))state.contacts=d.contacts;
      if(Array.isArray(d.selectedContactIds))state.selectedContactIds=d.selectedContactIds;
+     if(Array.isArray(d.contactGroups))state.contactGroups=d.contactGroups;
      const previousUrls=new Map(state.calendars.map(c=>[c.name,c.url]));
      state.calendars=Array.isArray(d.calendars)?d.calendars.map(c=>({
        name:c.name,color:c.color||"#64748b",enabled:c.enabled!==false,
@@ -1205,6 +1220,85 @@ function updateContactSummary(){
  }
 }
 
+
+function renderMailGroups(){
+ const root=$("mailGroupChips");if(!root)return;
+ const active=state.contactGroups.filter(g=>!g.archived);
+ root.innerHTML=active.length?active.map(g=>{
+   const allSelected=g.contactIds.length>0&&g.contactIds.every(id=>state.selectedContactIds.includes(id));
+   return `<button class="mailGroupChip ${allSelected?"active":""}" onclick='applyContactGroup(${JSON.stringify(g.id)})'>${esc(g.name)}</button>`;
+ }).join(""):'<span class="contactSummary">Aucun groupe actif</span>';
+}
+function applyContactGroup(groupId){
+ const g=state.contactGroups.find(x=>x.id===groupId);if(!g)return;
+ const validIds=g.contactIds.filter(id=>state.contacts.some(c=>c.id===id));
+ validIds.forEach(id=>{if(!state.selectedContactIds.includes(id))state.selectedContactIds.push(id)});
+ save();renderContacts();renderMailGroups();
+}
+function openGroupManager(tab="active"){
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh">
+   <div class="modalHeader"><h3>Groupes</h3><button class="close" onclick="openContactManager()">×</button></div>
+   <div class="groupTabs">
+     <button id="grpTabActive" onclick="renderGroupManager('active')">Actifs</button>
+     <button id="grpTabArchived" onclick="renderGroupManager('archived')">Archivés</button>
+     <button id="grpTabAll" onclick="renderGroupManager('all')">Tous</button>
+   </div>
+   <div id="groupManagerList" class="groupList"></div>
+   <button class="btn primary" style="width:100%;margin-top:10px" onclick="openGroupEditor()">+ Créer un groupe</button>
+ </div></div>`;
+ renderGroupManager(tab);
+}
+function renderGroupManager(tab="active"){
+ const root=$("groupManagerList");if(!root)return;
+ ["grpTabActive","grpTabArchived","grpTabAll"].forEach(id=>$(id)?.classList.remove("active"));
+ const tabId=tab==="archived"?"grpTabArchived":tab==="all"?"grpTabAll":"grpTabActive";
+ $(tabId)?.classList.add("active");
+ let groups=[...state.contactGroups];
+ if(tab==="active")groups=groups.filter(g=>!g.archived);
+ if(tab==="archived")groups=groups.filter(g=>g.archived);
+ root.innerHTML=groups.length?groups.map(g=>`
+   <div class="groupRow">
+     <div><div class="groupName">${esc(g.name)}</div><div class="groupMeta">${g.contactIds.length} contact${g.contactIds.length>1?"s":""}${g.archived?" · Archivé":""}</div></div>
+     <div class="groupActions">
+       <button onclick='openGroupEditor(${JSON.stringify(g.id)})'>Modifier</button>
+       ${g.archived?`<button onclick='setGroupArchived(${JSON.stringify(g.id)},false)'>Réactiver</button>`:`<button onclick='setGroupArchived(${JSON.stringify(g.id)},true)'>Archiver</button>`}
+       <button onclick='deleteGroup(${JSON.stringify(g.id)})'>Supprimer</button>
+     </div>
+   </div>`).join(""):'<div class="empty">Aucun groupe.</div>';
+}
+function openGroupEditor(groupId=null){
+ const g=groupId?state.contactGroups.find(x=>x.id===groupId):null;
+ const selectedIds=g?[...g.contactIds]:[];
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh">
+   <div class="modalHeader"><h3>${g?"Modifier le groupe":"Nouveau groupe"}</h3><button class="close" onclick="openGroupManager()">×</button></div>
+   <div class="field"><label>Nom du groupe</label><input id="groupName" value="${esc(g?.name||"")}" placeholder="Ex. Équipe EPS"></div>
+   <div class="field"><label>Membres</label><div id="groupMemberList" class="groupMemberList"></div></div>
+   <div class="modalFooter"><button class="btn" onclick="openGroupManager()">Annuler</button><button class="btn primary" onclick='saveGroup(${JSON.stringify(groupId)})'>Enregistrer</button></div>
+ </div></div>`;
+ $("groupMemberList").innerHTML=state.contacts.length?state.contacts.map(c=>`
+   <label class="groupMemberRow"><input type="checkbox" class="groupMemberCheck" value="${esc(c.id)}" ${selectedIds.includes(c.id)?"checked":""}>
+   <span><strong>${esc(c.name)}</strong><br><span style="font-size:11px;color:var(--muted)">${esc(c.email)}</span></span></label>`).join(""):'<div class="empty">Aucun contact disponible.</div>';
+}
+function saveGroup(groupId){
+ const name=$("groupName").value.trim();
+ const ids=[...document.querySelectorAll(".groupMemberCheck:checked")].map(x=>x.value);
+ if(!name)return alert("Ajoute un nom de groupe.");
+ if(!ids.length)return alert("Choisis au moins un contact.");
+ if(groupId){const g=state.contactGroups.find(x=>x.id===groupId);if(!g)return;g.name=name;g.contactIds=ids;}
+ else state.contactGroups.push({id:String(Date.now()+Math.random()),name,contactIds:ids,archived:false});
+ save();openGroupManager();
+}
+function setGroupArchived(groupId,archived){
+ const g=state.contactGroups.find(x=>x.id===groupId);if(!g)return;
+ g.archived=archived;save();renderGroupManager(archived?"archived":"active");renderMailGroups();
+}
+function deleteGroup(groupId){
+ const g=state.contactGroups.find(x=>x.id===groupId);if(!g)return;
+ if(!confirm(`Supprimer définitivement le groupe « ${g.name} » ?`))return;
+ state.contactGroups=state.contactGroups.filter(x=>x.id!==groupId);
+ save();renderGroupManager("all");renderMailGroups();
+}
+
 function recipients(){
  const a=state.contacts.filter(c=>state.selectedContactIds.includes(c.id)).map(c=>c.email);
  const extra=$("customEmail")?.value.trim();if(extra)a.push(extra);
@@ -1214,7 +1308,8 @@ function openContactManager(){
  $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh">
    <div class="modalHeader"><h3>Contacts</h3><button class="close" onclick="closeModal()">×</button></div>
    <div id="contactManageList" class="contactManageList"></div>
-   <button class="btn primary contactManagerAdd" style="width:100%" onclick="openContactEditor()">+ Ajouter un contact</button>
+   <button class="btn primary contactManagerAdd" style="width:100%;margin-bottom:8px" onclick="openContactEditor()">+ Ajouter un contact</button>
+   <button class="btn soft" style="width:100%" onclick="openGroupManager()">👥 Gérer les groupes</button>
  </div></div>`;
  renderContactManagerList();
 }
@@ -1256,7 +1351,8 @@ function deleteContact(index){
  const c=state.contacts[index];if(!c)return;
  if(!confirm(`Supprimer « ${c.name} » ?`))return;
  state.selectedContactIds=state.selectedContactIds.filter(id=>id!==c.id);
- state.contacts.splice(index,1);save();renderContactManagerList();renderContacts();
+ state.contactGroups.forEach(g=>g.contactIds=g.contactIds.filter(id=>id!==c.id));
+ state.contacts.splice(index,1);save();renderContactManagerList();renderContacts();renderMailGroups();
 }
 async function copyText(text){try{await navigator.clipboard.writeText(text);return true}catch(e){try{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();return ok}catch(e2){return false}}}
 async function openChatGPT(){
@@ -1271,7 +1367,7 @@ function clearMail(){
 }
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}));a.download=`coordo-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;state=d;renderAll();alert("Sauvegarde restaurée.")}catch(err){alert("Fichier non valide.")}};r.readAsText(f);e.target.value=""}
-renderContacts();renderAll();showPage("home",document.querySelector('[data-page="home"]'));
+renderContacts();renderMailGroups();renderAll();showPage("home",document.querySelector('[data-page="home"]'));
 </script>
 </body>
 </html>
