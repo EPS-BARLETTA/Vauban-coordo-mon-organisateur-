@@ -146,6 +146,14 @@ textarea{resize:vertical;min-height:120px}
 
 
 .agendaCompactBar{display:grid;grid-template-columns:1fr auto auto;gap:7px;align-items:center;margin-bottom:10px}.agendaCompactBar .viewSwitch{margin:0;display:grid;grid-template-columns:1fr 1fr;gap:5px}.agendaIconBtn{width:44px;height:44px;border:1px solid var(--line);border-radius:13px;background:#fff;font-size:19px}.highlightable{-webkit-touch-callout:none;user-select:none}.highlightPalette{position:fixed;left:12px;right:12px;bottom:calc(82px + env(safe-area-inset-bottom));z-index:1600;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 45px rgba(21,35,55,.22);padding:12px}.highlightColors{display:flex;gap:9px;flex-wrap:wrap}.highlightColor{width:38px;height:38px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--line)}.highlightAdd{border:1px solid var(--line);background:#f8fafc;border-radius:11px;padding:9px 11px;font-weight:800}.dayDrawer{margin-top:10px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}.dayDrawerHead{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line)}.dayDrawerItem{padding:10px 12px;border-top:1px solid var(--line)}.dayDrawerEvent{border-radius:12px;padding:10px}.bottomnav{position:fixed!important;bottom:0!important;transform:none!important}.main{padding-bottom:calc(104px + env(safe-area-inset-bottom))!important}
+
+.namedPalette{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}
+.namedColor{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px;text-align:left;font-weight:750}
+.namedColorDot{width:22px;height:22px;border-radius:7px;flex:none;border:1px solid rgba(0,0,0,.08)}
+.dayPopupBody{overflow:auto;padding:12px;max-height:calc(82dvh - 70px)}
+.dayPopupEvent{border-radius:14px;padding:12px;margin-bottom:9px;border:1px solid rgba(0,0,0,.05)}
+.taskHighlightRow{margin-top:10px}
+
 </style>
 </head>
 <body>
@@ -303,7 +311,18 @@ try{state=JSON.parse(localStorage.getItem(STORAGE)||"null")}catch(e){state=null}
 if(!state||!Array.isArray(state.tasks))state={tasks:[],categories:[...DEFAULT_CATEGORIES],calendars:[]};
 if(!Array.isArray(state.categories)||!state.categories.length)state.categories=[...DEFAULT_CATEGORIES];
 if(!Array.isArray(state.calendars))state.calendars=[];
-if(!Array.isArray(state.highlightColors)||!state.highlightColors.length)state.highlightColors=[{name:"Jaune",color:"#fff0a8"},{name:"Orange",color:"#ffd6a0"},{name:"Rose",color:"#ffd3df"},{name:"Violet",color:"#e5d5ff"},{name:"Bleu",color:"#cfe2ff"},{name:"Vert",color:"#cff0d8"},{name:"Turquoise",color:"#ccefed"}];
+if(!Array.isArray(state.highlightColors)||!state.highlightColors.length)state.highlightColors=[
+ {name:"BAC",color:"#CDECCF"},
+ {name:"Parents-profs",color:"#FFF0A8"},
+ {name:"Réunion coordo",color:"#CFE2FF"},
+ {name:"Rattrapage",color:"#FFD6A0"},
+ {name:"Formation",color:"#E5D5FF"},
+ {name:"Important",color:"#FFD3DF"},
+ {name:"Projet",color:"#CCEFED"},
+ {name:"Administratif",color:"#E2E8F0"},
+ {name:"Événement",color:"#D9E7FF"},
+ {name:"Perso",color:"#DDF4D7"}
+];
 if(!state.eventHighlights||typeof state.eventHighlights!=="object")state.eventHighlights={};
 for(const c of DEFAULT_CATEGORIES){if(!state.categories.some(x=>x.name===c.name))state.categories.push({...c})}
 state.tasks=state.tasks.map(t=>({
@@ -441,6 +460,19 @@ function bindLongPress(){document.querySelectorAll(".highlightable").forEach(el=
 function openHighlightPalette(key){let old=document.getElementById("highlightPalette");if(old)old.remove();let b=document.createElement("div");b.id="highlightPalette";b.className="highlightPalette";b.innerHTML=`<b>Surligner cet événement</b><div class="highlightColors" style="margin-top:9px"><button class="highlightAdd" onclick='setEventHighlight(${JSON.stringify(key)},"")'>Aucun</button>${state.highlightColors.map(c=>`<button class="highlightColor" title="${esc(c.name)}" style="background:${c.color}" onclick='setEventHighlight(${JSON.stringify(key)},${JSON.stringify(c.color)})'></button>`).join("")}<button class="highlightAdd" onclick='createHighlightColor(${JSON.stringify(key)})'>＋ Couleur</button></div>`;document.body.appendChild(b)}
 function setEventHighlight(k,c){if(c)state.eventHighlights[k]=c;else delete state.eventHighlights[k];save();document.getElementById("highlightPalette")?.remove();renderAgenda()}
 function createHighlightColor(k){let n=prompt("Nom de la couleur :","Couleur"),c=prompt("Couleur hexadécimale :","#FFD6A0");if(!c||!/^#[0-9a-fA-F]{6}$/.test(c))return;state.highlightColors.push({name:n||"Couleur",color:c});setEventHighlight(k,c)}
+
+function externalCalendarConflicts(candidate,ignoreId=null){
+ if(!candidate.date||!candidate.startTime||!candidate.endTime)return [];
+ const toMin=s=>{const [h,m]=s.split(":").map(Number);return h*60+m};
+ const a=toMin(candidate.startTime),b=toMin(candidate.endTime);
+ return getAgendaItems().filter(i=>{
+   if(i.kind==="task"&&i.task&&i.task.id===ignoreId)return false;
+   if(i.date!==candidate.date||!i.start||!i.end)return false;
+   const x=toMin(i.start),y=toMin(i.end);
+   return a<y&&b>x;
+ });
+}
+
 function getAgendaItems(){
  const taskItems=state.tasks.filter(t=>!done(t)&&t.date).map(t=>({
    kind:"task",date:t.date,start:t.startTime||"",end:t.endTime||"",title:t.title,
