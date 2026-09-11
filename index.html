@@ -442,7 +442,7 @@ textarea{resize:vertical;min-height:120px}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.13</div>
+<div class="versionTag">V10.14</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -1512,7 +1512,7 @@ Pour la formule d’appel :
 - s’il y a plusieurs destinataires, adapte la formule de manière naturelle ;
 - si la civilité n’est pas connue, utilise une formule neutre et naturelle sans l’inventer.
 
-Termine exactement par :
+Termine exactement par ces deux lignes, sans slash, sans tiret, sans ponctuation ajoutée et sans autre signature :
 Cordialement,
 Jérôme BARLETTA
 
@@ -1538,7 +1538,7 @@ Propose également un objet de mail court et pertinent.
 Destinataire(s) :
 ${rcpt}
 
-Termine exactement par :
+Termine exactement par ces deux lignes, sans slash, sans tiret, sans ponctuation ajoutée et sans autre signature :
 A +
 Jérôme
 
@@ -1566,6 +1566,20 @@ function stripMailEmojiAndEmoticons(text){
  s=s.replace(/(^|[\s(])(?:[:;=8xX][-^']?[)(DPpOo\/\\|*])(?=$|[\s.,!?;:])/g,"$1");
  // Clean spaces left behind.
  return s.replace(/[ \t]{2,}/g," ").replace(/ +\n/g,"\n").trim();
+}
+
+
+function normalizeMailSignature(text){
+ let s=String(text||"");
+
+ // Équipe : corrige A +/, A+/, A + \, A+\ et variantes proches.
+ s=s.replace(/(^|\n)\s*A\s*\+\s*[\/\\|]+\s*(?=\n|$)/gi,"$1A +");
+ s=s.replace(/(^|\n)\s*A\s*\+\s*(?=\n\s*Jérôme\b)/gi,"$1A +");
+
+ // Pro : retire les slashs ou séparateurs accidentels après "Cordialement,"
+ s=s.replace(/(^|\n)\s*Cordialement,\s*[\/\\|]+\s*(?=\n|$)/gi,"$1Cordialement,");
+
+ return s;
 }
 
 function parseChatGPTMailResponse(raw){
@@ -1606,7 +1620,7 @@ function parseChatGPTMailResponse(raw){
  body=body.replace(/^```(?:text|markdown)?\s*/i,"").replace(/\s*```$/,"").trim();
 
  subject=stripMailEmojiAndEmoticons(subject);
- body=stripMailEmojiAndEmoticons(body);
+ body=normalizeMailSignature(stripMailEmojiAndEmoticons(body));
  return {subject,body};
 }
 
@@ -1651,7 +1665,7 @@ function openMail(){
  let subject=$("mailSubject").value.trim();
  if(!subject)return alert("L’objet du mail est vide.");
  subject=stripMailEmojiAndEmoticons(subject);
- body=stripMailEmojiAndEmoticons(body);
+ body=normalizeMailSignature(stripMailEmojiAndEmoticons(body));
  $("mailSubject").value=subject;
  $("mailFinal").value=body;
  location.href=`mailto:${to.join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
