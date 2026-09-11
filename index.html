@@ -205,6 +205,9 @@ textarea{resize:vertical;min-height:120px}
   .bottomnav{bottom:0!important}
 }
 
+
+/* V10.2 accueil compact */
+.homeCompactTask{padding:10px 12px;border-top:1px solid var(--line);background:#fff}.homeCompactTask:first-child{border-top:0}.homeCompactGrid{display:grid;grid-template-columns:25px 5px 1fr 22px;gap:9px;align-items:center}.homeCompactMain{min-width:0;cursor:pointer}.homeCompactTitle{font-size:15px;font-weight:850;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.homeCompactMeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px}.homeCompactWhen{font-size:11px;color:var(--muted);font-weight:750}.homeChevron{font-size:22px;color:#9aa5b5;text-align:right}.homeCompactTask .check{width:22px;height:22px;margin:0}.taskDetailTitle{font-size:24px;font-weight:900;line-height:1.15;margin:4px 0 12px}.taskDetailNotes{margin-top:14px;padding:13px;background:#f8fafc;border:1px solid var(--line);border-radius:14px;color:#526078;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.taskDetailActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.taskDetailActions .btn{width:100%}
 </style>
 </head>
 <body>
@@ -448,32 +451,31 @@ function taskHTML(t){
    </div>
  </div>`
 }
+function homeTaskHTML(t){
+ const c=cat(t.category),pc=t.priority==="urgent"?"pUrg":t.priority==="haute"?"pHigh":t.priority==="basse"?"pLow":"pNorm",pn=t.priority==="urgent"?"URGENT":t.priority==="haute"?"Haute":t.priority==="basse"?"Basse":"Normale";
+ return `<div class="homeCompactTask"><div class="homeCompactGrid"><input class="check" type="checkbox" ${done(t)?"checked":""} onclick="event.stopPropagation()" onchange='toggleDone(${JSON.stringify(t.id)})'><div class="bar" style="background:${c.color};min-height:44px"></div><div class="homeCompactMain" onclick='openTaskDetail(${JSON.stringify(t.id)})'><div class="homeCompactTitle">${icon(t)} ${esc(t.title)}</div><div class="homeCompactMeta"><span class="pill cat" style="background:${c.color}">${esc(t.category)}</span><span class="pill ${pc}">${pn}</span><span class="homeCompactWhen">${dueText(t)}${t.startTime?` · ${t.startTime}${t.endTime?`–${t.endTime}`:""}`:""}</span></div></div><div class="homeChevron" onclick='openTaskDetail(${JSON.stringify(t.id)})'>›</div></div></div>`;
+}
+function fillHome(id,arr,empty="Aucune tâche"){const el=$(id);if(el)el.innerHTML=arr.length?arr.map(homeTaskHTML).join(""):`<div class="empty">${empty}</div>`}
+function linkifyText(s){return esc(s||"").replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all">$1</a>')}
+function openTaskDetail(id){
+ const t=state.tasks.find(x=>x.id===id);if(!t)return;const c=cat(t.category),pc=t.priority==="urgent"?"pUrg":t.priority==="haute"?"pHigh":t.priority==="basse"?"pLow":"pNorm",pn=t.priority==="urgent"?"URGENT":t.priority==="haute"?"Haute":t.priority==="basse"?"Basse":"Normale";
+ $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Détail de la tâche</h3><button class="close" onclick="closeModal()">×</button></div><div style="display:grid;grid-template-columns:6px 1fr;gap:12px"><div class="bar" style="background:${c.color}"></div><div><div class="taskDetailTitle">${icon(t)} ${esc(t.title)}</div><div class="meta"><span class="pill cat" style="background:${c.color}">${esc(t.category)}</span><span class="pill status">${esc(t.status)}</span><span class="pill ${pc}">${pn}</span></div><div class="when" style="font-size:15px;margin-top:10px">${dueText(t)}${t.startTime?` · ${t.startTime}${t.endTime?`–${t.endTime}`:""}`:""}</div></div></div>${t.notes?`<div class="taskDetailNotes">${linkifyText(t.notes)}</div>`:""}<div class="taskDetailActions"><button class="btn primary" onclick='closeModal();editTask(${JSON.stringify(t.id)})'>✏️ Modifier</button><button class="btn purple" onclick='closeModal();postponeTask(${JSON.stringify(t.id)})'>↻ Reporter</button><button class="btn soft" onclick='toggleDone(${JSON.stringify(t.id)});closeModal()'>✓ ${done(t)?"Réouvrir":"Terminer"}</button><button class="btn soft" onclick='closeModal();deleteTask(${JSON.stringify(t.id)})'>🗑️ Supprimer</button></div></div></div>`;
+}
+
 function fill(id,arr,empty="Aucune tâche"){const el=$(id);if(el)el.innerHTML=arr.length?arr.map(taskHTML).join(""):`<div class="empty">${empty}</div>`}
 
 function renderHome(){
  const open=state.tasks.filter(t=>!done(t));
- $("homeDate").textContent=fmtLong();
- $("homeTodo").textContent=open.length;
- $("homeUrgent").textContent=open.filter(t=>t.priority==="urgent").length;
- $("homeLate").textContent=open.filter(late).length;
- $("homeToday").textContent=open.filter(t=>t.date===todayISO()).length;
-
- const now=open.filter(t=>late(t)||t.priority==="urgent"||t.priority==="haute").sort(smartSort).slice(0,5);
- fill("homeNow",now,"Rien de prioritaire.");
-
+ $("homeDate").textContent=fmtLong();$("homeTodo").textContent=open.length;$("homeUrgent").textContent=open.filter(t=>t.priority==="urgent").length;$("homeLate").textContent=open.filter(late).length;$("homeToday").textContent=open.filter(t=>t.date===todayISO()).length;
  const today=open.filter(t=>t.date===todayISO()).sort(smartSort);
- fill("homeTodayList",today,"Rien de prévu aujourd’hui.");
-
  const tomorrow=open.filter(t=>t.date===addDaysISO(1)).sort(smartSort);
- fill("homeTomorrow",tomorrow,"Rien de prévu demain.");
-
- const follow=open.filter(t=>t.status==="En attente"||t.type==="Relance").sort(smartSort);
- fill("homeFollow",follow,"Aucune relance en attente.");
-
- const later=open.filter(t=>t.date&&t.date>addDaysISO(1)&&!follow.includes(t)&&!now.includes(t)).sort(smartSort);
- $("laterCount").textContent=later.length?`(${later.length})`:"";
- fill("homeLater",later,"Rien de prévu plus tard.");
+ const now=open.filter(t=>{if(t.date===todayISO()||t.date===addDaysISO(1))return false;return late(t)||(!t.date&&(t.priority==="urgent"||t.priority==="haute"))}).sort(smartSort).slice(0,5);
+ const used=new Set([...today,...tomorrow,...now].map(t=>t.id));
+ const follow=open.filter(t=>!used.has(t.id)&&(t.status==="En attente"||t.type==="Relance")).sort(smartSort);follow.forEach(t=>used.add(t.id));
+ const later=open.filter(t=>!used.has(t.id)&&t.date&&t.date>addDaysISO(1)).sort(smartSort);
+ fillHome("homeNow",now,"Rien à traiter immédiatement.");fillHome("homeTodayList",today,"Rien de prévu aujourd’hui.");fillHome("homeTomorrow",tomorrow,"Rien de prévu demain.");fillHome("homeFollow",follow,"Aucune relance en attente.");$("laterCount").textContent=later.length?`(${later.length})`:"";fillHome("homeLater",later,"Rien de prévu plus tard.");
 }
+
 function renderFilters(){
  const el=$("filterCategory"),old=el.value;
  el.innerHTML='<option>Toutes catégories</option>'+state.categories.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
