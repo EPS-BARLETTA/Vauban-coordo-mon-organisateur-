@@ -123,6 +123,27 @@ textarea{resize:vertical;min-height:120px}
 .secretHint{font-size:11px;color:var(--muted);line-height:1.4;background:#f8fafc;border:1px solid var(--line);border-radius:11px;padding:9px 10px;margin-top:8px}
 .sourceToggle{width:20px!important;height:20px!important;min-height:0!important}
 
+
+.viewSwitch{display:flex;gap:6px;margin-bottom:12px}
+.viewSwitch button{flex:1}
+.viewSwitch .activeView{background:var(--blue);color:#fff;border-color:var(--blue)}
+.monthWrap{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:10px}
+.monthHeader{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.monthHeader strong{font-size:16px}
+.monthWeek{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px}
+.monthWeek div{text-align:center;font-size:10px;color:var(--muted);font-weight:700;padding:4px 0}
+.monthGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.monthDay{min-height:82px;border:1px solid var(--line);border-radius:10px;padding:5px;background:#fff;overflow:hidden}
+.monthDay.blank{border:0;background:transparent}
+.monthDay.today{outline:2px solid var(--blue)}
+.monthDayNum{font-size:11px;font-weight:800;margin-bottom:3px}
+.monthEvent{font-size:8px;line-height:1.15;color:#fff;border-radius:5px;padding:3px 4px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:700px){
+  .monthDay{min-height:70px;padding:4px}
+  .monthEvent{font-size:7px;padding:2px 3px}
+  .monthHeader strong{font-size:14px}
+}
+
 </style>
 </head>
 <body>
@@ -206,6 +227,7 @@ textarea{resize:vertical;min-height:120px}
   </section>
 
   
+  
   <section id="page-agenda" class="page">
     <div class="topbar">
       <div class="hello"><h1>Agenda</h1><div class="date">Tâches + calendriers externes</div></div>
@@ -219,10 +241,33 @@ textarea{resize:vertical;min-height:120px}
       <button class="btn soft" onclick="$('restoreFile').click()">📂 Restaurer depuis Fichiers</button>
     </div>
 
+    <div class="viewSwitch">
+      <button id="agendaListBtn" class="btn activeView" onclick="setAgendaView('list')">☷ Liste</button>
+      <button id="agendaMonthBtn" class="btn" onclick="setAgendaView('month')">▦ Mois</button>
+    </div>
+
     <div id="calendarSources" class="calendarSources"></div>
     <div id="calendarSyncInfo" class="secretHint">Les URL privées ne sont jamais placées dans GitHub ni dans les sauvegardes.</div>
-    <div id="agendaList" style="margin-top:12px"></div>
+
+    <div id="agendaListView" style="margin-top:12px">
+      <div id="agendaList"></div>
+    </div>
+
+    <div id="agendaMonthView" style="display:none;margin-top:12px">
+      <div class="monthWrap">
+        <div class="monthHeader">
+          <button class="btn" onclick="changeAgendaMonth(-1)">‹</button>
+          <strong id="agendaMonthTitle"></strong>
+          <button class="btn" onclick="changeAgendaMonth(1)">›</button>
+        </div>
+        <div class="monthWeek">
+          <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+        </div>
+        <div id="agendaMonthGrid" class="monthGrid"></div>
+      </div>
+    </div>
   </section>
+
 
 
   <section id="page-quick" class="page">
@@ -304,13 +349,15 @@ state.tasks=state.tasks.map(t=>({
 }));
 
 let editingId=null;
+let agendaView='list';
+let agendaMonthDate=new Date();
 function save(){localStorage.setItem(STORAGE,JSON.stringify(state))}
 function showPage(name,el){
  document.querySelectorAll(".page").forEach(x=>x.classList.remove("active"));
  const page=$("page-"+name);if(page)page.classList.add("active");
  document.querySelectorAll("[data-page]").forEach(x=>x.classList.remove("active"));
  document.querySelectorAll(`[data-page="${name}"]`).forEach(x=>x.classList.add("active"));
- if(name==="agenda")renderAgenda();
+ if(name==="agenda"){renderAgenda();setAgendaView(agendaView);}
  if(name==="mail")renderContacts();
  window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -421,7 +468,7 @@ function renderQuick(){
  const open=state.tasks.filter(t=>!done(t));
  fill("quickList",open.filter(t=>t.quick).sort(smartSort),"Aucune note rapide.")
 }
-function renderAgenda(){
+function getAgendaItems(){
  const taskItems=state.tasks.filter(t=>!done(t)&&t.date).map(t=>({
    kind:"task",date:t.date,start:t.startTime||"",end:t.endTime||"",title:t.title,
    source:t.category,color:cat(t.category).color,task:t
@@ -433,27 +480,67 @@ function renderAgenda(){
      eventItems.push({kind:"event",date:e.date,start:e.start||"",end:e.end||"",title:e.title||"Événement",source:c.name,color:c.color||"#64748b",location:e.location||""});
    }
  }
- const items=[...taskItems,...eventItems].filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)||(a.start||"").localeCompare(b.start||""));
+ return [...taskItems,...eventItems].filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)||(a.start||"").localeCompare(b.start||""));
+}
+function renderAgenda(){
+ const items=getAgendaItems();
  const groups={};items.forEach(i=>(groups[i.date]??=[]).push(i));
  const el=$("agendaList");
- if(!items.length){el.innerHTML='<div class="sectionCard empty">Aucune échéance ni événement planifié.</div>';renderCalendarSources();return}
- el.innerHTML=Object.entries(groups).map(([date,rows])=>`
-   <div class="agendaGroup">
-     <div class="agendaDate">${date===todayISO()?"Aujourd’hui":date===addDaysISO(1)?"Demain":fmtDate(date)}</div>
-     <div class="sectionCard">
-       ${rows.map(i=>i.kind==="task" ? taskHTML(i.task) : `
-         <div class="eventCard">
-           <div class="eventRow">
-             <div class="eventBar" style="background:${i.color}"></div>
-             <div>
-               <div class="eventTitle">${esc(i.title)}</div>
-               <div class="eventMeta">${i.start?`${i.start}${i.end?`–${i.end}`:""} · `:""}${esc(i.source)}${i.location?` · ${esc(i.location)}`:""}</div>
+ if(!items.length){
+   el.innerHTML='<div class="sectionCard empty">Aucune échéance ni événement planifié.</div>';
+ }else{
+   el.innerHTML=Object.entries(groups).map(([date,rows])=>`
+     <div class="agendaGroup">
+       <div class="agendaDate">${date===todayISO()?"Aujourd’hui":date===addDaysISO(1)?"Demain":fmtDate(date)}</div>
+       <div class="sectionCard">
+         ${rows.map(i=>i.kind==="task" ? taskHTML(i.task) : `
+           <div class="eventCard">
+             <div class="eventRow">
+               <div class="eventBar" style="background:${i.color}"></div>
+               <div>
+                 <div class="eventTitle">${esc(i.title)}</div>
+                 <div class="eventMeta">${i.start?`${i.start}${i.end?`–${i.end}`:""} · `:""}${esc(i.source)}${i.location?` · ${esc(i.location)}`:""}</div>
+               </div>
              </div>
-           </div>
-         </div>`).join("")}
-     </div>
-   </div>`).join("");
+           </div>`).join("")}
+       </div>
+     </div>`).join("");
+ }
  renderCalendarSources();
+ renderAgendaMonth();
+}
+function setAgendaView(view){
+ agendaView=view;
+ $("agendaListView").style.display=view==="list"?"block":"none";
+ $("agendaMonthView").style.display=view==="month"?"block":"none";
+ $("agendaListBtn").classList.toggle("activeView",view==="list");
+ $("agendaMonthBtn").classList.toggle("activeView",view==="month");
+ if(view==="month")renderAgendaMonth();
+}
+function changeAgendaMonth(delta){
+ agendaMonthDate=new Date(agendaMonthDate.getFullYear(),agendaMonthDate.getMonth()+delta,1);
+ renderAgendaMonth();
+}
+function renderAgendaMonth(){
+ const title=$("agendaMonthTitle"),grid=$("agendaMonthGrid");
+ if(!title||!grid)return;
+ const y=agendaMonthDate.getFullYear(),m=agendaMonthDate.getMonth();
+ title.textContent=new Intl.DateTimeFormat("fr-FR",{month:"long",year:"numeric"}).format(agendaMonthDate);
+ const first=new Date(y,m,1);
+ const start=(first.getDay()+6)%7;
+ const count=new Date(y,m+1,0).getDate();
+ const items=getAgendaItems();
+ let out="";
+ for(let i=0;i<start;i++)out+='<div class="monthDay blank"></div>';
+ for(let d=1;d<=count;d++){
+   const iso=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+   const rows=items.filter(i=>i.date===iso);
+   out+=`<div class="monthDay ${iso===todayISO()?"today":""}" onclick="openTaskModal('${iso}')">
+     <div class="monthDayNum">${d}</div>
+     ${rows.slice(0,4).map(i=>`<div class="monthEvent" style="background:${i.color}">${esc(i.title)}</div>`).join("")}
+   </div>`;
+ }
+ grid.innerHTML=out;
 }
 
 function renderCalendarSources(){
