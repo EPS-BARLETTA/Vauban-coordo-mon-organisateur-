@@ -414,10 +414,35 @@ textarea{resize:vertical;min-height:120px}
 .civilityRow{display:grid;grid-template-columns:120px 1fr;gap:8px}
 .groupColorDot{width:14px;height:14px;border-radius:50%;display:inline-block;vertical-align:-2px;margin-right:7px;border:1px solid rgba(0,0,0,.08)}
 
+
+/* V10.13 - Groupes plus colorés */
+.groupSelect{
+  background:
+    linear-gradient(180deg,#ffffff 0%,#f7f9ff 100%);
+  border:1px solid #d9e2f2;
+  font-weight:800;
+}
+.selectedGroups{gap:8px}
+.selectedGroupChip{
+  color:#183153;
+  border:1px solid rgba(20,32,51,.08);
+  box-shadow:0 4px 12px rgba(21,35,55,.08);
+  padding:8px 11px;
+}
+.selectedGroupChip button{color:#183153}
+.groupColorPreview{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--muted);margin-top:6px
+}
+.groupColorSwatch{
+  width:18px;height:18px;border-radius:6px;
+  border:1px solid rgba(0,0,0,.08)
+}
+
 </style>
 </head>
 <body>
-<div class="versionTag">V10.10</div>
+<div class="versionTag">V10.13</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -559,7 +584,7 @@ textarea{resize:vertical;min-height:120px}
         <div class="mailWorkflowHint">ChatGPT proposera aussi l’objet. Au retour, utilise « Coller la réponse » : l’objet et le corps seront séparés automatiquement.</div>
 
         <div class="field" style="margin-top:14px"><label>Objet</label><input id="mailSubject" placeholder="L’objet sera proposé par ChatGPT"></div>
-        <div class="field"><label>Mail final</label><textarea id="mailFinal" placeholder="Colle ici la réponse de ChatGPT"></textarea></div>
+        <div class="field"><label>Mail final</label><textarea id="mailFinal" placeholder="Colle ici la réponse de ChatGPT" onpaste="handleMailFinalPaste(event)"></textarea></div>
         <div class="mailActions">
           <button class="btn soft" onclick="pasteFinal()">📋 Coller la réponse</button>
           <button class="btn primary" onclick="openMail()">✉️ Ouvrir Mail</button>
@@ -625,7 +650,11 @@ if(!Array.isArray(state.contactGroups))state.contactGroups=[];
 if(!state.mailMode)state.mailMode="pro";
 if(!state.teamTone)state.teamTone="normal";
 if(!Array.isArray(state.selectedGroupIds))state.selectedGroupIds=[];
-state.contactGroups=state.contactGroups.map(g=>({...g,color:g.color||"#dfeaff"}));
+const GROUP_PALETTE=["#CFE2FF","#DCCBFF","#CDEFD8","#FFE2B8","#FFD5E5","#CBEDEA","#FFF0A8","#D7E3F4","#E6D8C9","#D4F0C2"];
+state.contactGroups=state.contactGroups.map((g,i)=>({
+  ...g,
+  color:(!g.color||g.color==="#dfeaff")?GROUP_PALETTE[i%GROUP_PALETTE.length]:g.color
+}));
 for(const c of DEFAULT_CATEGORIES){if(!state.categories.some(x=>x.name===c.name))state.categories.push({...c})}
 state.tasks=state.tasks.map(t=>({
  id:t.id||String(Date.now()+Math.random()),
@@ -1282,7 +1311,11 @@ function updateContactSummary(){
 function renderMailGroups(){
  const select=$("mailGroupSelect"),chips=$("selectedGroups");if(!select||!chips)return;
  const active=state.contactGroups.filter(g=>!g.archived);
- select.innerHTML='<option value="">Choisir un groupe…</option>'+active.map(g=>`<option value="${esc(g.id)}">${esc(g.name)}</option>`).join("");
+ select.innerHTML='<option value="">Choisir un groupe…</option>'+active.map(g=>{
+   const idx=state.contactGroups.findIndex(x=>x.id===g.id);
+   const dot=["🔵","🟣","🟢","🟠","🟡","🔷","🟤","⚪"][idx%8];
+   return `<option value="${esc(g.id)}">${dot} ${esc(g.name)}</option>`;
+ }).join("");
  const selected=active.filter(g=>state.selectedGroupIds.includes(g.id));
  chips.innerHTML=selected.map(g=>`<span class="selectedGroupChip" style="background:${g.color}">${esc(g.name)}<button type="button" onclick='removeSelectedGroup(${JSON.stringify(g.id)})'>×</button></span>`).join("");
 }
@@ -1344,7 +1377,8 @@ function openGroupEditor(groupId=null){
  $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh">
    <div class="modalHeader"><h3>${g?"Modifier le groupe":"Nouveau groupe"}</h3><button class="close" onclick="openGroupManager()">×</button></div>
    <div class="field"><label>Nom du groupe</label><input id="groupName" value="${esc(g?.name||"")}" placeholder="Ex. Équipe EPS"></div>
-   <div class="field"><label>Couleur</label><input id="groupColor" type="color" value="${g?.color||"#dfeaff"}" style="height:52px;padding:4px"></div>
+   <div class="field"><label>Couleur</label><input id="groupColor" type="color" value="${g?.color||GROUP_PALETTE[state.contactGroups.length%GROUP_PALETTE.length]}" style="height:52px;padding:4px" oninput="$('groupColorSwatch').style.background=this.value"></div>
+   <div class="groupColorPreview"><span id="groupColorSwatch" class="groupColorSwatch" style="background:${g?.color||GROUP_PALETTE[state.contactGroups.length%GROUP_PALETTE.length]}"></span> Couleur du groupe</div>
    <div class="field"><label>Membres</label><div id="groupMemberList" class="groupMemberList"></div></div>
    <div class="modalFooter"><button class="btn" onclick="openGroupManager()">Annuler</button><button class="btn primary" onclick='saveGroup(${JSON.stringify(groupId)})'>Enregistrer</button></div>
  </div></div>`;
@@ -1355,7 +1389,7 @@ function openGroupEditor(groupId=null){
 function saveGroup(groupId){
  const name=$("groupName").value.trim();
  const ids=[...document.querySelectorAll(".groupMemberCheck:checked")].map(x=>x.value);
- const color=$("groupColor").value;
+ const color=$("groupColor").value||GROUP_PALETTE[state.contactGroups.length%GROUP_PALETTE.length];
  if(!name)return alert("Ajoute un nom de groupe.");
  if(!ids.length)return alert("Choisis au moins un contact.");
  if(groupId){const g=state.contactGroups.find(x=>x.id===groupId);if(!g)return;g.name=name;g.contactIds=ids;g.color=color;}
@@ -1466,6 +1500,7 @@ async function openChatGPT(){
    prompt=`Rédige un mail professionnel en français à partir de mes idées en vrac.
 
 Le ton doit être professionnel, naturel, fluide, précis et cordial, sans formulation robotique, pompeuse ou inutilement administrative.
+N’utilise aucun emoji, émoticône, pictogramme décoratif ou symbole de réaction dans le mail, y compris dans l’objet.
 Structure clairement le message et corrige toutes les fautes.
 Propose également un objet de mail court et pertinent.
 
@@ -1495,6 +1530,7 @@ Ne donne aucun commentaire ni explication.`;
    prompt=`Rédige un mail à mon équipe / mes collègues en français à partir de mes idées en vrac.
 
 Le ton doit être naturel, direct, correct et chaleureux.${humor?" Ajoute une touche d’humour légère et naturelle, sans en faire trop.":" Reste simple et convivial, sans humour forcé."}
+N’utilise aucun emoji, émoticône, pictogramme décoratif ou symbole de réaction dans le mail, y compris dans l’objet.
 Évite les formulations trop formelles ou robotiques.
 Commence par « Hello, ».
 Propose également un objet de mail court et pertinent.
@@ -1520,24 +1556,106 @@ Ne donne aucun commentaire ni explication.`;
  $("mailInfo").textContent=ok?"✅ Prompt copié. Colle-le dans ChatGPT.":"⚠️ Copie automatique refusée.";
  window.open("https://chatgpt.com/","_blank");
 }
+
+
+function stripMailEmojiAndEmoticons(text){
+ let s=String(text||"");
+ // Emoji / pictographic Unicode ranges, variation selectors and ZWJ sequences.
+ s=s.replace(/[\p{Extended_Pictographic}\p{Emoji_Presentation}\uFE0F\u200D]/gu,"");
+ // Common text emoticons.
+ s=s.replace(/(^|[\s(])(?:[:;=8xX][-^']?[)(DPpOo\/\\|*])(?=$|[\s.,!?;:])/g,"$1");
+ // Clean spaces left behind.
+ return s.replace(/[ \t]{2,}/g," ").replace(/ +\n/g,"\n").trim();
+}
+
+function parseChatGPTMailResponse(raw){
+ let txt=String(raw||"").replace(/\r\n/g,"\n").trim();
+ if(!txt)return {subject:"",body:""};
+
+ // Accept variants such as:
+ // OBJET: ...
+ // ## OBJET: ...
+ // **OBJET:** ...
+ // Objet : ...
+ const lines=txt.split("\n");
+ let subject="";
+ let subjectIndex=-1;
+
+ for(let i=0;i<Math.min(lines.length,8);i++){
+   const clean=lines[i]
+     .replace(/^\s{0,3}#{1,6}\s*/,"")
+     .replace(/^\s*[-*]\s*/,"")
+     .replace(/\*\*/g,"")
+     .trim();
+   const m=clean.match(/^OBJET\s*:\s*(.+)$/i);
+   if(m){
+     subject=m[1].trim();
+     subjectIndex=i;
+     break;
+   }
+ }
+
+ let body=txt;
+ if(subjectIndex>=0){
+   let rest=lines.slice(subjectIndex+1);
+   while(rest.length && (!rest[0].trim() || /^[-–—]{3,}$/.test(rest[0].trim()))) rest.shift();
+   body=rest.join("\n").trim();
+ }
+
+ // Remove accidental markdown fences/headings around the body.
+ body=body.replace(/^```(?:text|markdown)?\s*/i,"").replace(/\s*```$/,"").trim();
+
+ subject=stripMailEmojiAndEmoticons(subject);
+ body=stripMailEmojiAndEmoticons(body);
+ return {subject,body};
+}
+
+function applyParsedMailResponse(raw){
+ const parsed=parseChatGPTMailResponse(raw);
+ if(parsed.subject)$("mailSubject").value=parsed.subject;
+ $("mailFinal").value=parsed.body||raw;
+ return parsed;
+}
+
 async function pasteFinal(){
  try{
    const txt=await navigator.clipboard.readText();
-   const m=txt.match(/^\s*OBJET\s*:\s*(.+?)\s*\n---\s*\n([\s\S]*)$/i);
-   if(m){
-     $("mailSubject").value=m[1].trim();
-     $("mailFinal").value=m[2].trim();
-     $("mailInfo").textContent="✅ Objet et mail collés.";
-   }else{
-     $("mailFinal").value=txt;
-     $("mailInfo").textContent="✅ Réponse collée. Objet à vérifier manuellement.";
-   }
+   const parsed=applyParsedMailResponse(txt);
+   $("mailInfo").textContent=parsed.subject
+     ?"✅ Objet et corps du mail récupérés automatiquement."
+     :"✅ Réponse collée. Je n’ai pas détecté l’objet automatiquement.";
  }catch(e){
    $("mailFinal").focus();
    $("mailInfo").textContent="Sur iPhone : appui long puis « Coller ».";
  }
 }
-function openMail(){const to=recipients();if(!to.length)return alert("Choisis un destinataire.");const body=$("mailFinal").value.trim()||$("mailBody").value.trim();if(!body)return alert("Ajoute le message.");location.href=`mailto:${to.join(",")}?subject=${encodeURIComponent($("mailSubject").value.trim())}&body=${encodeURIComponent(body)}`}
+
+function handleMailFinalPaste(e){
+ const txt=(e.clipboardData||window.clipboardData)?.getData("text");
+ if(!txt)return;
+ e.preventDefault();
+ const parsed=applyParsedMailResponse(txt);
+ $("mailInfo").textContent=parsed.subject
+   ?"✅ Objet et corps du mail récupérés automatiquement."
+   :"✅ Réponse collée. Objet non détecté automatiquement.";
+}
+
+function openMail(){
+ const to=recipients();if(!to.length)return alert("Choisis un destinataire.");
+ if(!$("mailSubject").value.trim() && $("mailFinal").value.trim()){
+   const parsed=applyParsedMailResponse($("mailFinal").value);
+   if(parsed.subject)$("mailSubject").value=parsed.subject;
+ }
+ let body=$("mailFinal").value.trim()||$("mailBody").value.trim();
+ if(!body)return alert("Ajoute le message.");
+ let subject=$("mailSubject").value.trim();
+ if(!subject)return alert("L’objet du mail est vide.");
+ subject=stripMailEmojiAndEmoticons(subject);
+ body=stripMailEmojiAndEmoticons(body);
+ $("mailSubject").value=subject;
+ $("mailFinal").value=body;
+ location.href=`mailto:${to.join(",")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+}
 function clearMail(){
  $("mailSubject").value="";$("mailBody").value="";$("mailFinal").value="";$("customEmail").value="";
  state.selectedContactIds=[];state.selectedGroupIds=[];save();renderContacts();renderMailGroups();$("mailInfo").textContent=""
