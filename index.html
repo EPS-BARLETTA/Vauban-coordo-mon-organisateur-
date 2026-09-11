@@ -208,6 +208,20 @@ textarea{resize:vertical;min-height:120px}
 
 /* V10.2 accueil compact */
 .homeCompactTask{padding:10px 12px;border-top:1px solid var(--line);background:#fff}.homeCompactTask:first-child{border-top:0}.homeCompactGrid{display:grid;grid-template-columns:25px 5px 1fr 22px;gap:9px;align-items:center}.homeCompactMain{min-width:0;cursor:pointer}.homeCompactTitle{font-size:15px;font-weight:850;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.homeCompactMeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:5px}.homeCompactWhen{font-size:11px;color:var(--muted);font-weight:750}.homeChevron{font-size:22px;color:#9aa5b5;text-align:right}.homeCompactTask .check{width:22px;height:22px;margin:0}.taskDetailTitle{font-size:24px;font-weight:900;line-height:1.15;margin:4px 0 12px}.taskDetailNotes{margin-top:14px;padding:13px;background:#f8fafc;border:1px solid var(--line);border-radius:14px;color:#526078;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}.taskDetailActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.taskDetailActions .btn{width:100%}
+
+/* V10.3 - Agenda compact et dépliable */
+.agendaCompactItem{padding:9px 11px;border-top:1px solid var(--line);background:#fff;cursor:pointer}
+.agendaCompactItem:first-child{border-top:0}
+.agendaCompactRow{display:grid;grid-template-columns:5px 1fr 20px;gap:9px;align-items:center}
+.agendaCompactBar{border-radius:8px;min-height:42px}
+.agendaCompactTitle{font-size:14px;font-weight:850;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agendaCompactMeta{font-size:11px;color:var(--muted);font-weight:700;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.agendaCompactChevron{font-size:21px;color:#9aa5b5;text-align:right}
+.agendaDetailBox{padding:2px 0 4px}
+.agendaDetailTitle{font-size:23px;font-weight:900;line-height:1.15;margin:4px 0 12px}
+.agendaDetailMeta{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.agendaDetailInfo{padding:12px;background:#f8fafc;border:1px solid var(--line);border-radius:14px;line-height:1.5;margin-top:10px}
+
 </style>
 </head>
 <body>
@@ -498,7 +512,7 @@ function renderQuick(){
 function eventKey(i){return i.kind==="task"&&i.task&&i.task.id ? "task|"+i.task.id : [i.source||"",i.date||"",i.start||"",i.end||"",i.title||""].join("|")}
 function highlightFor(i){return state.eventHighlights[eventKey(i)]||""}
 let lpTimer=null,selectedAgendaDay="";
-function bindLongPress(){document.querySelectorAll(".highlightable").forEach(el=>{if(el.dataset.lp)return;el.dataset.lp="1";let start=()=>{lpTimer=setTimeout(()=>openHighlightPalette(el.dataset.eventKey),520)},cancel=()=>clearTimeout(lpTimer);el.addEventListener("touchstart",start,{passive:true});el.addEventListener("touchend",cancel,{passive:true});el.addEventListener("touchmove",cancel,{passive:true})})}
+function bindLongPress(){document.querySelectorAll(".highlightable").forEach(el=>{if(el.dataset.lp)return;el.dataset.lp="1";let fired=false;let start=()=>{fired=false;lpTimer=setTimeout(()=>{fired=true;el.dataset.longPressed="1";openHighlightPalette(el.dataset.eventKey)},520)},cancel=()=>clearTimeout(lpTimer);el.addEventListener("touchstart",start,{passive:true});el.addEventListener("touchend",()=>{cancel();if(fired)setTimeout(()=>delete el.dataset.longPressed,450)},{passive:true});el.addEventListener("touchmove",cancel,{passive:true})})}
 function openHighlightPalette(key){
  let old=document.getElementById("highlightPalette");if(old)old.remove();
  let b=document.createElement("div");
@@ -547,6 +561,36 @@ function getAgendaItems(){
  }
  return [...taskItems,...eventItems].filter(x=>x.date).sort((a,b)=>a.date.localeCompare(b.date)||(a.start||"").localeCompare(b.start||""));
 }
+function agendaCompactHTML(i){
+ const h=highlightFor(i), bg=h||"#fff", bar=h||i.color;
+ const meta=`${i.start?`${i.start}${i.end?`–${i.end}`:""} · `:""}${esc(i.source)}${i.location?` · ${esc(i.location)}`:""}`;
+ return `<div class="agendaCompactItem highlightable" data-event-key="${esc(eventKey(i))}" style="background:${bg}" onclick='if(this.dataset.longPressed!=="1")openAgendaItem(${JSON.stringify(eventKey(i))})'>
+   <div class="agendaCompactRow">
+     <div class="agendaCompactBar" style="background:${bar}"></div>
+     <div><div class="agendaCompactTitle">${i.kind==="task"?icon(i.task)+" ":""}${esc(i.title)}</div><div class="agendaCompactMeta">${meta}</div></div>
+     <div class="agendaCompactChevron">›</div>
+   </div>
+ </div>`;
+}
+function agendaItemByKey(key){return getAgendaItems().find(i=>eventKey(i)===key)}
+function openAgendaItem(key){
+ const i=agendaItemByKey(key);if(!i)return;
+ if(i.kind==="task"){openTaskDetail(i.task.id);return}
+ const h=highlightFor(i);
+ $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:86dvh">
+   <div class="modalHeader"><h3>Événement</h3><button class="close" onclick="closeModal()">×</button></div>
+   <div class="agendaDetailBox">
+     <div style="display:grid;grid-template-columns:6px 1fr;gap:12px"><div class="bar" style="background:${h||i.color}"></div><div>
+       <div class="agendaDetailTitle">${esc(i.title)}</div>
+       <div class="agendaDetailMeta"><span class="pill cat" style="background:${i.color}">${esc(i.source)}</span>${h?'<span class="pill status">Surligné</span>':''}</div>
+       <div class="when" style="font-size:15px">${fmtDate(i.date)}${i.start?` · ${i.start}${i.end?`–${i.end}`:""}`:" · Jour entier"}</div>
+     </div></div>
+     ${i.location?`<div class="agendaDetailInfo"><b>Lieu</b><br>${esc(i.location)}</div>`:""}
+     <button class="btn soft" style="width:100%;margin-top:14px" onclick='closeModal();openHighlightPalette(${JSON.stringify(eventKey(i))})'>🎨 Surligner / changer la couleur</button>
+   </div>
+ </div></div>`;
+}
+
 function renderAgenda(){
  const items=getAgendaItems().filter(i=>i.date>=todayISO());
  const groups={};items.forEach(i=>(groups[i.date]??=[]).push(i));
@@ -558,16 +602,7 @@ function renderAgenda(){
      <div class="agendaGroup">
        <div class="agendaDate">${date===todayISO()?"Aujourd’hui":date===addDaysISO(1)?"Demain":fmtDate(date)}</div>
        <div class="sectionCard">
-         ${rows.map(i=>i.kind==="task" ? taskHTML(i.task) : `
-           <div class="eventCard highlightable" data-event-key="${esc(eventKey(i))}" style="background:${highlightFor(i)||'#fff'}">
-             <div class="eventRow">
-               <div class="eventBar" style="background:${highlightFor(i)||i.color};color:${highlightFor(i)?'#142033':'#fff'}"></div>
-               <div>
-                 <div class="eventTitle">${esc(i.title)}</div>
-                 <div class="eventMeta">${i.start?`${i.start}${i.end?`–${i.end}`:""} · `:""}${esc(i.source)}${i.location?` · ${esc(i.location)}`:""}</div>
-               </div>
-             </div>
-           </div>`).join("")}
+         ${rows.map(agendaCompactHTML).join("")}
        </div>
      </div>`).join("");
  }
@@ -615,10 +650,7 @@ function openAgendaDay(iso){
  $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:82dvh">
    <div class="modalHeader"><h3>${lab}</h3><button class="close" onclick="closeModal()">×</button></div>
    <div class="dayPopupBody">
-     ${rows.length?rows.map(i=>i.kind==="task"?taskHTML(i.task):`<div class="dayPopupEvent highlightable" data-event-key="${esc(eventKey(i))}" style="background:${highlightFor(i)||"#fff"}">
-       <div class="eventTitle">${esc(i.title)}</div>
-       <div class="eventMeta">${i.start?i.start+(i.end?"–"+i.end:"")+" · ":""}${esc(i.source)}${i.location?" · "+esc(i.location):""}</div>
-     </div>`).join(""):'<div class="empty">Aucun événement ce jour.</div>'}
+     ${rows.length?rows.map(agendaCompactHTML).join(""):'<div class="empty">Aucun événement ce jour.</div>'}
      <button class="btn primary" style="width:100%;margin-top:8px" onclick="closeModal();openTaskModal('${iso}')">+ Ajouter une tâche</button>
    </div>
  </div></div>`;
