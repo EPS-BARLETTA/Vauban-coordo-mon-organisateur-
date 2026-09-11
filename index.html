@@ -313,6 +313,82 @@ textarea{resize:vertical;min-height:120px}
   pointer-events:none
 }
 
+
+/* V10.8 - Sélecteur de contacts mobile */
+.mailRecipientStack{display:grid;gap:8px}
+.contactSelectButton{
+  width:100%;
+  min-height:56px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff;
+  text-align:left;
+  padding:13px 46px 13px 14px;
+  font-weight:800;
+  color:var(--text);
+  position:relative
+}
+.contactSelectButton:after{
+  content:"⌄";
+  position:absolute;
+  right:16px;
+  top:14px;
+  color:var(--muted);
+  font-size:24px
+}
+.contactChips{display:flex;gap:6px;flex-wrap:wrap}
+.contactChip{
+  display:inline-flex;align-items:center;gap:6px;
+  background:#eef3ff;color:#244fae;
+  border:1px solid #dce7ff;border-radius:999px;
+  padding:6px 9px;font-size:11px;font-weight:800
+}
+.contactChip button{
+  border:0;background:transparent;color:#244fae;padding:0;
+  font-size:14px;line-height:1
+}
+.contactSheet{
+  position:fixed;inset:0;z-index:1700;
+  background:rgba(18,28,45,.45);
+  display:flex;align-items:flex-end
+}
+.contactSheetPanel{
+  width:100%;
+  max-height:88dvh;
+  background:#fff;
+  border-radius:24px 24px 0 0;
+  padding:14px 14px calc(18px + env(safe-area-inset-bottom));
+  box-shadow:0 -18px 50px rgba(21,35,55,.18);
+  overflow:hidden;
+  display:flex;flex-direction:column
+}
+.contactSheetHead{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;padding-bottom:10px
+}
+.contactSheetHead h3{margin:0;font-size:22px}
+.contactSheetSearch{margin-bottom:10px}
+.contactSheetList{
+  overflow:auto;border:1px solid var(--line);border-radius:14px
+}
+.contactSheetItem{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 12px
+}
+.contactSheetItem:nth-child(even){background:#f3f5f7}
+.contactSheetItem input{width:22px;height:22px;min-height:0;flex:none}
+.contactSheetName{font-size:14px;font-weight:850}
+.contactSheetEmail{font-size:11px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
+.contactSheetFooter{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  padding-top:10px
+}
+.contactManagerButton{width:100%}
+@media(min-width:850px){
+  .contactSheet{align-items:center;justify-content:center}
+  .contactSheetPanel{max-width:560px;border-radius:20px;max-height:82vh}
+}
+
 </style>
 </head>
 <body>
@@ -421,13 +497,10 @@ textarea{resize:vertical;min-height:120px}
       <div class="card" style="padding:14px">
         <div class="field">
           <label>Destinataires</label>
-          <div class="mailRecipientRow">
-            <div class="contactSelectBox">
-              <button id="contactSelectButton" type="button" class="contactSelectButton" onclick="toggleContactDropdown()">Sélectionner les contacts</button>
-              <div id="contactDropdown" class="contactDropdown hidden"></div>
-              <div id="contactSummary" class="contactSummary">Aucun contact sélectionné</div>
-            </div>
-            <button class="btn soft" type="button" onclick="openContactManager()">⚙️ Contacts</button>
+          <div class="mailRecipientStack">
+            <button id="contactSelectButton" type="button" class="contactSelectButton" onclick="openContactSheet()">Sélectionner les contacts</button>
+            <div id="contactChips" class="contactChips"></div>
+            <button class="btn soft contactManagerButton" type="button" onclick="openContactManager()">⚙️ Gérer les contacts</button>
           </div>
         </div>
         <div class="field"><label>Autre adresse (facultatif)</label><input id="customEmail" type="email" placeholder="prenom.nom@exemple.com"></div>
@@ -1062,30 +1135,76 @@ function addCategory(){const n=$("newCat").value.trim();if(!n)return;if(state.ca
 function renameCategory(i,n){n=n.trim();if(!n)return;const old=state.categories[i].name;state.categories[i].name=n;state.tasks.forEach(t=>{if(t.category===old)t.category=n});renderAll()}
 function removeCategory(i){if(state.categories.length===1)return alert("Il faut garder une catégorie.");const old=state.categories[i].name,rep=state.categories.find((_,j)=>j!==i).name;if(state.tasks.some(t=>t.category===old)&&!confirm(`Les tâches de ${old} seront déplacées vers ${rep}. Continuer ?`))return;state.tasks.forEach(t=>{if(t.category===old)t.category=rep});state.categories.splice(i,1);renderAll();renderCategoryManager()}
 function renderContacts(){
- const dd=$("contactDropdown");if(!dd)return;
- dd.innerHTML=state.contacts.length?state.contacts.map((c,i)=>`
-   <label class="contactOption">
-     <input type="checkbox" class="contactCheck" value="${esc(c.id)}" ${state.selectedContactIds.includes(c.id)?"checked":""} onchange="toggleContactSelection('${esc(c.id)}',this.checked)">
-     <span><div class="contactOptionName">${esc(c.name)}</div><div class="contactOptionEmail">${esc(c.email)}</div></span>
-   </label>`).join(""):'<div class="empty">Aucun contact enregistré.</div>';
  updateContactSummary();
 }
-function toggleContactDropdown(){
- const dd=$("contactDropdown");if(!dd)return;
- dd.classList.toggle("hidden");
+function openContactSheet(){
+ const current=state.selectedContactIds||[];
+ const root=document.createElement("div");
+ root.id="contactSheet";
+ root.className="contactSheet";
+ root.innerHTML=`<div class="contactSheetPanel" onclick="event.stopPropagation()">
+   <div class="contactSheetHead">
+     <h3>Choisir les contacts</h3>
+     <button class="close" onclick="closeContactSheet()">×</button>
+   </div>
+   <div class="contactSheetSearch">
+     <input id="contactSearch" placeholder="Rechercher un contact…" oninput="renderContactSheetList()">
+   </div>
+   <div id="contactSheetList" class="contactSheetList"></div>
+   <div class="contactSheetFooter">
+     <button class="btn soft" onclick="openContactManagerFromSheet()">⚙️ Gérer</button>
+     <button class="btn primary" onclick="closeContactSheet()">Terminé</button>
+   </div>
+ </div>`;
+ root.onclick=()=>closeContactSheet();
+ document.body.appendChild(root);
+ renderContactSheetList();
+}
+function closeContactSheet(){
+ document.getElementById("contactSheet")?.remove();
+ updateContactSummary();
+}
+function renderContactSheetList(){
+ const root=$("contactSheetList");if(!root)return;
+ const q=($("contactSearch")?.value||"").trim().toLowerCase();
+ const filtered=state.contacts
+   .map((c,i)=>({c,i}))
+   .filter(({c})=>!q||c.name.toLowerCase().includes(q)||c.email.toLowerCase().includes(q));
+ root.innerHTML=filtered.length?filtered.map(({c,i})=>`
+   <label class="contactSheetItem">
+     <input type="checkbox" ${state.selectedContactIds.includes(c.id)?"checked":""}
+       onchange="toggleContactSelection('${esc(c.id)}',this.checked)">
+     <span>
+       <div class="contactSheetName">${esc(c.name)}</div>
+       <div class="contactSheetEmail">${esc(c.email)}</div>
+     </span>
+   </label>`).join(""):'<div class="empty">Aucun contact trouvé.</div>';
+}
+function openContactManagerFromSheet(){
+ closeContactSheet();
+ openContactManager();
 }
 function toggleContactSelection(id,checked){
- if(checked){if(!state.selectedContactIds.includes(id))state.selectedContactIds.push(id)}
- else state.selectedContactIds=state.selectedContactIds.filter(x=>x!==id);
+ if(checked){
+   if(!state.selectedContactIds.includes(id))state.selectedContactIds.push(id)
+ }else{
+   state.selectedContactIds=state.selectedContactIds.filter(x=>x!==id)
+ }
+ save();updateContactSummary();
+}
+function removeSelectedContact(id){
+ state.selectedContactIds=state.selectedContactIds.filter(x=>x!==id);
  save();updateContactSummary();
 }
 function updateContactSummary(){
  const selected=state.contacts.filter(c=>state.selectedContactIds.includes(c.id));
- const b=$("contactSelectButton"),s=$("contactSummary");
- if(!b||!s)return;
- b.textContent=selected.length?`${selected.length} contact${selected.length>1?"s":""} sélectionné${selected.length>1?"s":""}`:"Sélectionner les contacts";
- s.textContent=selected.length?selected.map(c=>c.name).join(", "):"Aucun contact sélectionné";
+ const b=$("contactSelectButton"),chips=$("contactChips");
+ if(b)b.textContent=selected.length?`${selected.length} contact${selected.length>1?"s":""} sélectionné${selected.length>1?"s":""}`:"Sélectionner les contacts";
+ if(chips){
+   chips.innerHTML=selected.map(c=>`<span class="contactChip">${esc(c.name)}<button type="button" onclick='removeSelectedContact(${JSON.stringify(c.id)})'>×</button></span>`).join("");
+ }
 }
+
 function recipients(){
  const a=state.contacts.filter(c=>state.selectedContactIds.includes(c.id)).map(c=>c.email);
  const extra=$("customEmail")?.value.trim();if(extra)a.push(extra);
