@@ -222,6 +222,73 @@ textarea{resize:vertical;min-height:120px}
 .agendaDetailMeta{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
 .agendaDetailInfo{padding:12px;background:#f8fafc;border:1px solid var(--line);border-radius:14px;line-height:1.5;margin-top:10px}
 
+
+/* V10.4 - Tâches et Notes compactes */
+.compactListTask{
+  padding:10px 12px;
+  border-top:1px solid var(--line);
+  background:#fff;
+}
+.compactListTask:first-child{border-top:0}
+.compactListGrid{
+  display:grid;
+  grid-template-columns:24px 5px 1fr 20px;
+  gap:9px;
+  align-items:center;
+}
+.compactListMain{
+  min-width:0;
+  cursor:pointer;
+}
+.compactListTitle{
+  font-size:15px;
+  font-weight:850;
+  line-height:1.2;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.compactListMeta{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-top:5px;
+}
+.compactListWhen{
+  font-size:11px;
+  color:var(--muted);
+  font-weight:750;
+}
+.compactChevron{
+  color:#9aa5b5;
+  font-size:20px;
+  text-align:right;
+}
+
+
+/* V10.5 - Gestion des contacts mail */
+.mailRecipientRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.contactSelectBox{position:relative}
+.contactSelectButton{width:100%;min-height:46px;border:1px solid var(--line);border-radius:12px;background:#fff;text-align:left;padding:11px 42px 11px 12px;font-weight:700;color:var(--text)}
+.contactSelectButton:after{content:"⌄";position:absolute;right:14px;top:10px;color:var(--muted);font-size:22px}
+.contactDropdown{position:absolute;left:0;right:0;top:52px;z-index:1300;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 40px rgba(21,35,55,.18);max-height:310px;overflow:auto;padding:6px}
+.contactOption{display:flex;align-items:center;gap:9px;padding:10px;border-radius:10px}
+.contactOption:nth-child(even){background:#f3f5f7}
+.contactOption input{width:20px;height:20px;min-height:0;flex:none}
+.contactOptionName{font-weight:800;font-size:13px}
+.contactOptionEmail{font-size:11px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.contactSummary{font-size:12px;color:var(--muted);margin-top:6px}
+.contactManageList{border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.contactManageRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:10px 12px}
+.contactManageRow:nth-child(even){background:#f3f5f7}
+.contactManageInfo{min-width:0}
+.contactManageName{font-weight:800;font-size:13px}
+.contactManageEmail{font-size:11px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.contactManageActions{display:flex;gap:6px}
+.contactManageActions button{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 8px;font-size:11px;font-weight:700}
+.contactManagerAdd{margin-top:10px}
+
 </style>
 </head>
 <body>
@@ -327,8 +394,18 @@ textarea{resize:vertical;min-height:120px}
     <div class="topbar"><div class="hello"><h1>Mail</h1><div class="date">Brouillon → ChatGPT → Mail</div></div></div>
     <div class="mailGrid">
       <div class="card" style="padding:14px">
-        <div class="field"><label>Destinataires</label><div id="contactsList"></div></div>
-        <div class="field"><label>Autre contact</label><input id="customEmail" type="email" placeholder="prenom.nom@exemple.com"></div>
+        <div class="field">
+          <label>Destinataires</label>
+          <div class="mailRecipientRow">
+            <div class="contactSelectBox">
+              <button id="contactSelectButton" type="button" class="contactSelectButton" onclick="toggleContactDropdown()">Sélectionner les contacts</button>
+              <div id="contactDropdown" class="contactDropdown hidden"></div>
+              <div id="contactSummary" class="contactSummary">Aucun contact sélectionné</div>
+            </div>
+            <button class="btn soft" type="button" onclick="openContactManager()">⚙️ Contacts</button>
+          </div>
+        </div>
+        <div class="field"><label>Autre adresse (facultatif)</label><input id="customEmail" type="email" placeholder="prenom.nom@exemple.com"></div>
       </div>
       <div class="card" style="padding:14px">
         <div class="field"><label>Objet</label><input id="mailSubject" placeholder="Objet du mail"></div>
@@ -367,7 +444,7 @@ const DEFAULT_CATEGORIES=[
  {name:"Coordo Bac",color:"#22b8b2"},
  {name:"Perso",color:"#64748b"}
 ];
-const CONTACTS=[
+const DEFAULT_CONTACTS=[
  ["Jérôme iCloud","j.barletta@icloud.com"],["Jérôme Vauban","j.barletta@vauban.lu"],
  ["M. Vecrigner","m.vecrigner@vauban.lu"],["C. Jeudy","c.jeudy@vauban.lu"],["H. Lacouque","h.lacouque@vauban.lu"],["G. Mansouri","g.mansouri@vauban.lu"],
  ["H. De Rosa","h.derosa@vauban.lu"],["P. Perfetto","p.perfetto@vauban.lu"],["G. Ludwig","g.ludwig@vauban.lu"],["A. Le Pannerer","a.lepannerer@vauban.lu"],
@@ -381,6 +458,10 @@ if(!Array.isArray(state.categories)||!state.categories.length)state.categories=[
 if(!Array.isArray(state.calendars))state.calendars=[];
 if(!Array.isArray(state.highlightColors)||!state.highlightColors.length)state.highlightColors=[{name:"Jaune",color:"#fff0a8"},{name:"Orange",color:"#ffd6a0"},{name:"Rose",color:"#ffd3df"},{name:"Violet",color:"#e5d5ff"},{name:"Bleu",color:"#cfe2ff"},{name:"Vert",color:"#cff0d8"},{name:"Turquoise",color:"#ccefed"}];
 if(!state.eventHighlights||typeof state.eventHighlights!=="object")state.eventHighlights={};
+if(!Array.isArray(state.contacts)||!state.contacts.length){
+  state.contacts=DEFAULT_CONTACTS.map(([name,email])=>({id:String(Date.now()+Math.random()),name,email}));
+}
+if(!Array.isArray(state.selectedContactIds))state.selectedContactIds=[];
 for(const c of DEFAULT_CATEGORIES){if(!state.categories.some(x=>x.name===c.name))state.categories.push({...c})}
 state.tasks=state.tasks.map(t=>({
  id:t.id||String(Date.now()+Math.random()),
@@ -490,6 +571,32 @@ function renderHome(){
  fillHome("homeNow",now,"Rien à traiter immédiatement.");fillHome("homeTodayList",today,"Rien de prévu aujourd’hui.");fillHome("homeTomorrow",tomorrow,"Rien de prévu demain.");fillHome("homeFollow",follow,"Aucune relance en attente.");$("laterCount").textContent=later.length?`(${later.length})`:"";fillHome("homeLater",later,"Rien de prévu plus tard.");
 }
 
+
+function compactTaskHTML(t){
+ const c=cat(t.category);
+ const pc=t.priority==="urgent"?"pUrg":t.priority==="haute"?"pHigh":t.priority==="basse"?"pLow":"pNorm";
+ const pn=t.priority==="urgent"?"URGENT":t.priority==="haute"?"Haute":t.priority==="basse"?"Basse":"Normale";
+ return `<div class="compactListTask highlightable" data-event-key="${esc("task|"+t.id)}" style="background:${state.eventHighlights["task|"+t.id]||"#fff"}">
+   <div class="compactListGrid">
+     <input class="check" type="checkbox" ${done(t)?"checked":""} onclick="event.stopPropagation()" onchange='toggleDone(${JSON.stringify(t.id)})'>
+     <div class="bar" style="background:${c.color};min-height:42px"></div>
+     <div class="compactListMain" onclick='openTaskDetail(${JSON.stringify(t.id)})'>
+       <div class="compactListTitle">${icon(t)} ${esc(t.title)}</div>
+       <div class="compactListMeta">
+         <span class="pill cat" style="background:${c.color}">${esc(t.category)}</span>
+         <span class="pill ${pc}">${pn}</span>
+         <span class="compactListWhen">${dueText(t)}${t.startTime?` · ${t.startTime}${t.endTime?`–${t.endTime}`:""}`:""}</span>
+       </div>
+     </div>
+     <div class="compactChevron" onclick='openTaskDetail(${JSON.stringify(t.id)})'>›</div>
+   </div>
+ </div>`;
+}
+function fillCompact(id,arr,empty="Aucune tâche"){
+ const el=$(id);
+ if(el)el.innerHTML=arr.length?arr.map(compactTaskHTML).join(""):`<div class="empty">${empty}</div>`;
+}
+
 function renderFilters(){
  const el=$("filterCategory"),old=el.value;
  el.innerHTML='<option>Toutes catégories</option>'+state.categories.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
@@ -503,11 +610,11 @@ function renderAllTasks(){
  else if(sm==="date")arr.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
  else if(sm==="priority")arr.sort((a,b)=>prioRank(a.priority)-prioRank(b.priority));
  else arr.sort((a,b)=>a.category.localeCompare(b.category,"fr"));
- fill("allList",arr,"Aucune tâche.")
+ fillCompact("allList",arr,"Aucune tâche.")
 }
 function renderQuick(){
  const open=state.tasks.filter(t=>!done(t));
- fill("quickList",open.filter(t=>t.quick).sort(smartSort),"Aucune note rapide.")
+ fillCompact("quickList",open.filter(t=>t.quick).sort(smartSort),"Aucune note rapide.")
 }
 function eventKey(i){return i.kind==="task"&&i.task&&i.task.id ? "task|"+i.task.id : [i.source||"",i.date||"",i.start||"",i.end||"",i.title||""].join("|")}
 function highlightFor(i){return state.eventHighlights[eventKey(i)]||""}
@@ -766,6 +873,8 @@ function exportBackup(){
    categories:state.categories,
    highlightColors:state.highlightColors,
    eventHighlights:state.eventHighlights,
+   contacts:state.contacts,
+   selectedContactIds:state.selectedContactIds,
    calendars:state.calendars.map(c=>({name:c.name,color:c.color,enabled:c.enabled!==false,url:null}))
  };
  const a=document.createElement("a");
@@ -784,6 +893,8 @@ function restoreBackup(e){
      state.categories=d.categories;
      if(Array.isArray(d.highlightColors))state.highlightColors=d.highlightColors;
      if(d.eventHighlights&&typeof d.eventHighlights==="object")state.eventHighlights=d.eventHighlights;
+     if(Array.isArray(d.contacts))state.contacts=d.contacts;
+     if(Array.isArray(d.selectedContactIds))state.selectedContactIds=d.selectedContactIds;
      const previousUrls=new Map(state.calendars.map(c=>[c.name,c.url]));
      state.calendars=Array.isArray(d.calendars)?d.calendars.map(c=>({
        name:c.name,color:c.color||"#64748b",enabled:c.enabled!==false,
@@ -879,8 +990,84 @@ function renderCategoryManager(){$("catManager").innerHTML=state.categories.map(
 function addCategory(){const n=$("newCat").value.trim();if(!n)return;if(state.categories.some(c=>c.name.toLowerCase()===n.toLowerCase()))return alert("Cette catégorie existe déjà.");state.categories.push({name:n,color:$("newColor").value});renderAll();renderCategoryManager();$("newCat").value=""}
 function renameCategory(i,n){n=n.trim();if(!n)return;const old=state.categories[i].name;state.categories[i].name=n;state.tasks.forEach(t=>{if(t.category===old)t.category=n});renderAll()}
 function removeCategory(i){if(state.categories.length===1)return alert("Il faut garder une catégorie.");const old=state.categories[i].name,rep=state.categories.find((_,j)=>j!==i).name;if(state.tasks.some(t=>t.category===old)&&!confirm(`Les tâches de ${old} seront déplacées vers ${rep}. Continuer ?`))return;state.tasks.forEach(t=>{if(t.category===old)t.category=rep});state.categories.splice(i,1);renderAll();renderCategoryManager()}
-function renderContacts(){$("contactsList").innerHTML=CONTACTS.map(([n,e])=>`<label class="contact"><input type="checkbox" class="contactCheck" value="${e}"><span><strong>${esc(n)}</strong><br><span style="font-size:11px;color:var(--muted)">${e}</span></span></label>`).join("")}
-function recipients(){const a=[...document.querySelectorAll(".contactCheck:checked")].map(x=>x.value),extra=$("customEmail").value.trim();if(extra)a.push(extra);return a}
+function renderContacts(){
+ const dd=$("contactDropdown");if(!dd)return;
+ dd.innerHTML=state.contacts.length?state.contacts.map((c,i)=>`
+   <label class="contactOption">
+     <input type="checkbox" class="contactCheck" value="${esc(c.id)}" ${state.selectedContactIds.includes(c.id)?"checked":""} onchange="toggleContactSelection('${esc(c.id)}',this.checked)">
+     <span><div class="contactOptionName">${esc(c.name)}</div><div class="contactOptionEmail">${esc(c.email)}</div></span>
+   </label>`).join(""):'<div class="empty">Aucun contact enregistré.</div>';
+ updateContactSummary();
+}
+function toggleContactDropdown(){
+ const dd=$("contactDropdown");if(!dd)return;
+ dd.classList.toggle("hidden");
+}
+function toggleContactSelection(id,checked){
+ if(checked){if(!state.selectedContactIds.includes(id))state.selectedContactIds.push(id)}
+ else state.selectedContactIds=state.selectedContactIds.filter(x=>x!==id);
+ save();updateContactSummary();
+}
+function updateContactSummary(){
+ const selected=state.contacts.filter(c=>state.selectedContactIds.includes(c.id));
+ const b=$("contactSelectButton"),s=$("contactSummary");
+ if(!b||!s)return;
+ b.textContent=selected.length?`${selected.length} contact${selected.length>1?"s":""} sélectionné${selected.length>1?"s":""}`:"Sélectionner les contacts";
+ s.textContent=selected.length?selected.map(c=>c.name).join(", "):"Aucun contact sélectionné";
+}
+function recipients(){
+ const a=state.contacts.filter(c=>state.selectedContactIds.includes(c.id)).map(c=>c.email);
+ const extra=$("customEmail")?.value.trim();if(extra)a.push(extra);
+ return a
+}
+function openContactManager(){
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh">
+   <div class="modalHeader"><h3>Contacts</h3><button class="close" onclick="closeModal()">×</button></div>
+   <div id="contactManageList" class="contactManageList"></div>
+   <button class="btn primary contactManagerAdd" style="width:100%" onclick="openContactEditor()">+ Ajouter un contact</button>
+ </div></div>`;
+ renderContactManagerList();
+}
+function renderContactManagerList(){
+ const root=$("contactManageList");if(!root)return;
+ root.innerHTML=state.contacts.length?state.contacts.map((c,i)=>`
+   <div class="contactManageRow">
+     <div class="contactManageInfo">
+       <div class="contactManageName">${esc(c.name)}</div>
+       <div class="contactManageEmail">${esc(c.email)}</div>
+     </div>
+     <div class="contactManageActions">
+       <button onclick="openContactEditor(${i})">Modifier</button>
+       <button onclick="deleteContact(${i})">Supprimer</button>
+     </div>
+   </div>`).join(""):'<div class="empty">Aucun contact.</div>';
+}
+function openContactEditor(index=null){
+ const c=index===null?{name:"",email:""}:state.contacts[index];
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:80dvh">
+   <div class="modalHeader"><h3>${index===null?"Ajouter":"Modifier"} un contact</h3><button class="close" onclick="closeModal()">×</button></div>
+   <div class="field"><label>Nom</label><input id="contactName" value="${esc(c.name)}" placeholder="Ex. Vincent"></div>
+   <div class="field"><label>Adresse e-mail</label><input id="contactEmail" type="email" value="${esc(c.email)}" placeholder="prenom.nom@exemple.com"></div>
+   <div class="modalFooter"><button class="btn" onclick="openContactManager()">Annuler</button><button class="btn primary" onclick="saveContact(${index===null?"null":index})">Enregistrer</button></div>
+ </div></div>`;
+}
+function saveContact(index){
+ const name=$("contactName").value.trim(),email=$("contactEmail").value.trim();
+ if(!name)return alert("Ajoute un nom.");
+ if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return alert("Adresse e-mail invalide.");
+ if(index===null){
+   state.contacts.push({id:String(Date.now()+Math.random()),name,email});
+ }else{
+   state.contacts[index]={...state.contacts[index],name,email};
+ }
+ save();openContactManager();renderContacts();
+}
+function deleteContact(index){
+ const c=state.contacts[index];if(!c)return;
+ if(!confirm(`Supprimer « ${c.name} » ?`))return;
+ state.selectedContactIds=state.selectedContactIds.filter(id=>id!==c.id);
+ state.contacts.splice(index,1);save();renderContactManagerList();renderContacts();
+}
 async function copyText(text){try{await navigator.clipboard.writeText(text);return true}catch(e){try{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();const ok=document.execCommand("copy");ta.remove();return ok}catch(e2){return false}}}
 async function openChatGPT(){
  const prompt=`Rédige et mets en forme ce mail en français à partir de mon brouillon. Garde exactement le sens de ma demande, corrige les fautes et adopte un ton professionnel, naturel et cordial. Ajoute une formule d’appel adaptée et les formules de politesse nécessaires. Termine systématiquement par :\n\nCordialement,\nJérôme Barletta\n\nDonne-moi uniquement le corps du mail final prêt à envoyer, sans commentaire ni explication.\n\nObjet : ${$("mailSubject").value.trim()}\n\nMon brouillon :\n${$("mailBody").value.trim()}`;
@@ -888,7 +1075,10 @@ async function openChatGPT(){
 }
 async function pasteFinal(){try{$("mailFinal").value=await navigator.clipboard.readText();$("mailInfo").textContent="✅ Texte collé."}catch(e){$("mailFinal").focus();$("mailInfo").textContent="Sur iPhone : appui long puis « Coller »."}}
 function openMail(){const to=recipients();if(!to.length)return alert("Choisis un destinataire.");const body=$("mailFinal").value.trim()||$("mailBody").value.trim();if(!body)return alert("Ajoute le message.");location.href=`mailto:${to.join(",")}?subject=${encodeURIComponent($("mailSubject").value.trim())}&body=${encodeURIComponent(body)}`}
-function clearMail(){$("mailSubject").value="";$("mailBody").value="";$("mailFinal").value="";$("customEmail").value="";document.querySelectorAll(".contactCheck").forEach(x=>x.checked=false);$("mailInfo").textContent=""}
+function clearMail(){
+ $("mailSubject").value="";$("mailBody").value="";$("mailFinal").value="";$("customEmail").value="";
+ state.selectedContactIds=[];save();renderContacts();$("mailInfo").textContent=""
+}
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}));a.download=`coordo-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;state=d;renderAll();alert("Sauvegarde restaurée.")}catch(err){alert("Fichier non valide.")}};r.readAsText(f);e.target.value=""}
 renderContacts();renderAll();showPage("home",document.querySelector('[data-page="home"]'));
