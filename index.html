@@ -442,7 +442,7 @@ textarea{resize:vertical;min-height:120px}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.15</div>
+<div class="versionTag">V10.16</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -1207,6 +1207,27 @@ function updatePreview(){
  $("previewPrio").textContent=psel.value==="urgent"?"URGENT":psel.value==="haute"?"Haute":psel.value==="basse"?"Basse":"Normale"
 }
 function toggleTime(){const all=$("mAllDay");if(!all)return;$("mStart").disabled=all.checked;$("mEnd").disabled=all.checked;if(all.checked){$("mStart").value="";$("mEnd").value=""}}
+
+function externalCalendarConflicts(candidate,ignoreId=null){
+ if(!candidate||!candidate.date||candidate.allDay||!candidate.startTime||!candidate.endTime)return [];
+ const start=timeMin(candidate.startTime),end=timeMin(candidate.endTime);
+ if(start===null||end===null||end<=start)return [];
+
+ return getAgendaItems().filter(i=>{
+   // Ignore the task currently being edited.
+   if(i.kind==="task"&&i.task&&i.task.id===ignoreId)return false;
+
+   // Same day + events that actually have a start/end time.
+   if(i.date!==candidate.date||!i.start||!i.end)return false;
+
+   const otherStart=timeMin(i.start),otherEnd=timeMin(i.end);
+   if(otherStart===null||otherEnd===null)return false;
+
+   // True overlap only.
+   return start<otherEnd && end>otherStart;
+ });
+}
+
 function modalCandidate(){return{id:editingId,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mStart").value,endTime:$("mEnd").value,status:$("mStatus").value}}
 function checkConflict(){
  const box=$("conflictBox");if(!box)return;
@@ -1226,6 +1247,7 @@ function checkConflict(){
  }
 }
 function saveTask(){
+ try{
  const title=$("mTitle").value.trim();if(!title)return alert("Ajoute un titre.");
  if(!$("mAllDay").checked){
    const s=timeMin($("mStart").value),e=timeMin($("mEnd").value);
@@ -1238,6 +1260,10 @@ function saveTask(){
  const h=$("mHighlight")?.value||"";
  if(h)state.eventHighlights["task|"+data.id]=h;else delete state.eventHighlights["task|"+data.id];
  editingId=null;closeModal();renderAll()
+ }catch(err){
+   console.error(err);
+   alert("Erreur lors de l’enregistrement de la tâche. Recharge l’application puis réessaie.");
+ }
 }
 function closeModal(){editingId=null;$("modalRoot").innerHTML=""}
 function addQuick(){
