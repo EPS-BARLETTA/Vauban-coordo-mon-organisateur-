@@ -442,7 +442,7 @@ textarea{resize:vertical;min-height:120px}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.14</div>
+<div class="versionTag">V10.15</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -692,7 +692,14 @@ function smartSort(a,b){
  if(prioRank(a.priority)!==prioRank(b.priority))return prioRank(a.priority)-prioRank(b.priority);
  return(a.date||"9999").localeCompare(b.date||"9999")
 }
-function timeMin(v){if(!v)return null;const[h,m]=v.split(":").map(Number);return h*60+m}
+function timeMin(v){
+ if(!v)return null;
+ const m=String(v).match(/^(\d{1,2}):(\d{2})/);
+ if(!m)return null;
+ const h=Number(m[1]),min=Number(m[2]);
+ if(!Number.isFinite(h)||!Number.isFinite(min))return null;
+ return h*60+min;
+}
 function conflictsFor(t){
  if(!t.date||t.allDay||!t.startTime||!t.endTime||done(t))return[];
  const s=timeMin(t.startTime),e=timeMin(t.endTime);if(e<=s)return[];
@@ -1182,8 +1189,8 @@ function openTaskModal(date="",task=null){
     <div class="field"><label>Statut</label><select id="mStatus">${["À faire","En cours","En attente","Terminé"].map(x=>`<option ${x===t.status?"selected":""}>${x}</option>`).join("")}</select></div>
     <div class="field"><label>Date</label><input id="mDate" type="date" value="${t.date||""}" onchange="checkConflict()"></div>
     <div class="field"><label><input id="mAllDay" type="checkbox" style="width:auto;min-height:0" ${t.allDay?"checked":""} onchange="toggleTime();checkConflict()"> Toute la journée</label></div>
-    <div class="field"><label>Heure début</label><input id="mStart" type="time" value="${t.startTime||""}" onchange="checkConflict()"></div>
-    <div class="field"><label>Heure fin</label><input id="mEnd" type="time" value="${t.endTime||""}" onchange="checkConflict()"></div>
+    <div class="field"><label>Heure début</label><input id="mStart" type="time" value="${t.startTime||""}" oninput="checkConflict()" onchange="checkConflict()"></div>
+    <div class="field"><label>Heure fin</label><input id="mEnd" type="time" value="${t.endTime||""}" oninput="checkConflict()" onchange="checkConflict()"></div>
    </div>
    <div id="conflictBox" class="conflictBox"></div>
    <div class="field"><label>Surlignage</label><select id="mHighlight"><option value="">Aucun</option>${state.highlightColors.map(c=>`<option value="${c.color}" ${state.eventHighlights["task|"+t.id]===c.color?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>
@@ -1202,19 +1209,28 @@ function updatePreview(){
 function toggleTime(){const all=$("mAllDay");if(!all)return;$("mStart").disabled=all.checked;$("mEnd").disabled=all.checked;if(all.checked){$("mStart").value="";$("mEnd").value=""}}
 function modalCandidate(){return{id:editingId,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mStart").value,endTime:$("mEnd").value,status:$("mStatus").value}}
 function checkConflict(){
- const box=$("conflictBox");if(!box)return;const c=modalCandidate();
- if(c.startTime&&c.endTime&&timeMin(c.endTime)<=timeMin(c.startTime)){
-   box.style.display="block";box.textContent="⚠️ L’heure de fin doit être après l’heure de début.";return
+ const box=$("conflictBox");if(!box)return;
+ const c=modalCandidate();
+ box.style.display="none";
+ box.textContent="";
+ const start=timeMin(c.startTime),end=timeMin(c.endTime);
+ if(start!==null&&end!==null&&end<=start){
+   box.style.display="block";
+   box.textContent="L’heure de fin doit être après l’heure de début.";
+   return;
  }
  const arr=externalCalendarConflicts(c,editingId);
  if(arr.length){
    box.style.display="block";
-   box.innerHTML="⚠️ Chevauchement avec :<br>"+arr.map(i=>`• ${esc(i.title)} ${i.start||""}${i.end?`–${i.end}`:""} · ${esc(i.source||"")}`).join("<br>")+"<br><br>Tu pourras quand même enregistrer.";
- }else box.style.display="none"
+   box.innerHTML="Chevauchement avec :<br>"+arr.map(i=>`• ${esc(i.title)} ${i.start||""}${i.end?`–${i.end}`:""} · ${esc(i.source||"")}`).join("<br>")+"<br><br>Tu peux quand même enregistrer.";
+ }
 }
 function saveTask(){
  const title=$("mTitle").value.trim();if(!title)return alert("Ajoute un titre.");
- if(!$("mAllDay").checked&&$("mStart").value&&$("mEnd").value&&timeMin($("mEnd").value)<=timeMin($("mStart").value))return alert("L’heure de fin doit être après l’heure de début.");
+ if(!$("mAllDay").checked){
+   const s=timeMin($("mStart").value),e=timeMin($("mEnd").value);
+   if(s!==null&&e!==null&&e<=s)return alert("L’heure de fin doit être après l’heure de début.");
+ }
  const data={id:editingId||String(Date.now()+Math.random()),title,category:$("mCategory").value,type:$("mType").value,status:$("mStatus").value,priority:$("mPriority").value,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mAllDay").checked?"":$("mStart").value,endTime:$("mAllDay").checked?"":$("mEnd").value,notes:$("mNotes").value.trim(),quick:$("mQuick").checked,createdAt:editingId?(state.tasks.find(t=>t.id===editingId)?.createdAt||Date.now()):Date.now()};
  const cf=externalCalendarConflicts(data,editingId);
  if(cf.length&&!confirm("⚠️ Conflit d’horaire avec :\n\n"+cf.map(i=>`${i.title} (${i.start||"?"}–${i.end||"?"}) · ${i.source||""}`).join("\n")+"\n\nAjouter quand même ?"))return;
