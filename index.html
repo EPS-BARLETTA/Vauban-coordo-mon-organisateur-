@@ -439,10 +439,18 @@ textarea{resize:vertical;min-height:120px}
   border:1px solid rgba(0,0,0,.08)
 }
 
+
+/* V10.17 - Rappels iPhone + Total Reset */
+.reminderBadge{display:inline-flex;align-items:center;gap:5px;background:#eef4ff;color:#244fae;border:1px solid #dce7ff;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:800}
+.calendarExportBtn{width:100%;margin-top:10px}
+.dangerZone{padding:14px;border:1px solid #f2c7c7;background:#fff8f8;border-radius:14px;margin-top:12px}
+.dangerZoneTitle{font-size:13px;font-weight:900;margin-bottom:6px;color:#8b2b2b}
+.dangerZoneText{font-size:11px;line-height:1.45;color:#7a4a4a;margin-bottom:10px}
+.btnDanger{width:100%;border:1px solid #d8a1a1;background:#fff;color:#8b2b2b;padding:11px 14px;border-radius:12px;font-weight:850}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.16</div>
+<div class="versionTag">V10.17</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -661,7 +669,7 @@ state.tasks=state.tasks.map(t=>({
  title:t.title||"Sans titre",category:t.category||"Coordo",type:t.type||"Autre",
  status:t.status||"À faire",priority:t.priority||"normale",date:t.date||"",
  allDay:!!t.allDay,startTime:t.startTime||"",endTime:t.endTime||"",
- notes:t.notes||"",quick:!!(t.quick||t.inbox),createdAt:t.createdAt||Date.now()
+ notes:t.notes||"",quick:!!(t.quick||t.inbox),reminder:t.reminder||"none",calendarExported:!!t.calendarExported,createdAt:t.createdAt||Date.now()
 }));
 
 let editingId=null;
@@ -714,6 +722,66 @@ function dueText(t){
 }
 function icon(t){return({Mail:"✉️",Appel:"📞","Réunion":"👥",Document:"📄",Relance:"🔁","Idée":"💡",Autre:"•"})[t.type||"Autre"]}
 
+
+function reminderLabel(v){
+ return ({none:"Aucun","10m":"10 min avant","1h":"1 h avant","2h":"2 h avant","1d":"1 jour avant"})[v||"none"]||"Aucun";
+}
+function reminderTrigger(v){
+ return ({"10m":"-PT10M","1h":"-PT1H","2h":"-PT2H","1d":"-P1D"})[v]||"";
+}
+function icsEscape(s){
+ return String(s||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/,/g,"\\,").replace(/;/g,"\\;");
+}
+function icsDateTime(date,time){
+ if(!date)return"";
+ const d=date.replace(/-/g,"");
+ if(!time)return d;
+ return d+"T"+time.replace(":","")+"00";
+}
+function addTaskToIPhoneCalendar(id){
+ const t=state.tasks.find(x=>x.id===id);if(!t)return;
+ if(!t.date)return alert("Ajoute d’abord une date à la tâche.");
+ if(!t.allDay&&!t.startTime)return alert("Ajoute une heure de début ou coche « Toute la journée ».");
+
+ const uid=`coordo-${t.id}@local`;
+ const dtstamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
+ let dtstart="",dtend="";
+
+ if(t.allDay||!t.startTime){
+   dtstart=`DTSTART;VALUE=DATE:${icsDateTime(t.date,"")}`;
+   const d=parseISO(t.date);d.setDate(d.getDate()+1);
+   const next=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+   dtend=`DTEND;VALUE=DATE:${icsDateTime(next,"")}`;
+ }else{
+   dtstart=`DTSTART:${icsDateTime(t.date,t.startTime)}`;
+   if(t.endTime)dtend=`DTEND:${icsDateTime(t.date,t.endTime)}`;
+   else{
+     const s=timeMin(t.startTime),e=s+60;
+     const hh=String(Math.floor(e/60)%24).padStart(2,"0"),mm=String(e%60).padStart(2,"0");
+     dtend=`DTEND:${icsDateTime(t.date,`${hh}:${mm}`)}`;
+   }
+ }
+
+ const alarm=reminderTrigger(t.reminder);
+ const lines=[
+  "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Coordo//FR","CALSCALE:GREGORIAN","METHOD:PUBLISH","BEGIN:VEVENT",
+  `UID:${icsEscape(uid)}`,`DTSTAMP:${dtstamp}`,dtstart,dtend,`SUMMARY:${icsEscape(t.title)}`,
+  t.notes?`DESCRIPTION:${icsEscape(t.notes)}`:"",
+  alarm?"BEGIN:VALARM":"",alarm?`TRIGGER:${alarm}`:"",alarm?"ACTION:DISPLAY":"",alarm?`DESCRIPTION:${icsEscape(t.title)}`:"",alarm?"END:VALARM":"",
+  "END:VEVENT","END:VCALENDAR"
+ ].filter(Boolean);
+
+ const blob=new Blob([lines.join("\r\n")],{type:"text/calendar;charset=utf-8"});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement("a");
+ a.href=url;
+ a.download=`${(t.title||"coordo").replace(/[^a-z0-9-_]+/gi,"-").replace(/^-+|-+$/g,"").slice(0,50)||"coordo"}.ics`;
+ document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1500);
+ t.calendarExported=true;save();renderAll();
+ alert("Le fichier calendrier a été créé. Sur iPhone, ouvre-le puis ajoute l’événement à Calendrier.");
+}
+
 function taskHTML(t){
  const c=cat(t.category);
  const pc=t.priority==="urgent"?"pUrg":t.priority==="haute"?"pHigh":t.priority==="basse"?"pLow":"pNorm";
@@ -754,7 +822,7 @@ function fillHome(id,arr,empty="Aucune tâche"){const el=$(id);if(el)el.innerHTM
 function linkifyText(s){return esc(s||"").replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all">$1</a>')}
 function openTaskDetail(id){
  const t=state.tasks.find(x=>x.id===id);if(!t)return;const c=cat(t.category),pc=t.priority==="urgent"?"pUrg":t.priority==="haute"?"pHigh":t.priority==="basse"?"pLow":"pNorm",pn=t.priority==="urgent"?"URGENT":t.priority==="haute"?"Haute":t.priority==="basse"?"Basse":"Normale";
- $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Détail de la tâche</h3><button class="close" onclick="closeModal()">×</button></div><div style="display:grid;grid-template-columns:6px 1fr;gap:12px"><div class="bar" style="background:${c.color}"></div><div><div class="taskDetailTitle">${icon(t)} ${esc(t.title)}</div><div class="meta"><span class="pill cat" style="background:${c.color}">${esc(t.category)}</span><span class="pill status">${esc(t.status)}</span><span class="pill ${pc}">${pn}</span></div><div class="when" style="font-size:15px;margin-top:10px">${dueText(t)}${t.startTime?` · ${t.startTime}${t.endTime?`–${t.endTime}`:""}`:""}</div></div></div>${t.notes?`<div class="taskDetailNotes">${linkifyText(t.notes)}</div>`:""}<div class="taskDetailActions"><button class="btn primary" onclick='closeModal();editTask(${JSON.stringify(t.id)})'>✏️ Modifier</button><button class="btn purple" onclick='closeModal();postponeTask(${JSON.stringify(t.id)})'>↻ Reporter</button><button class="btn soft" onclick='toggleDone(${JSON.stringify(t.id)});closeModal()'>✓ ${done(t)?"Réouvrir":"Terminer"}</button><button class="btn soft" onclick='closeModal();deleteTask(${JSON.stringify(t.id)})'>🗑️ Supprimer</button></div></div></div>`;
+ $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Détail de la tâche</h3><button class="close" onclick="closeModal()">×</button></div><div style="display:grid;grid-template-columns:6px 1fr;gap:12px"><div class="bar" style="background:${c.color}"></div><div><div class="taskDetailTitle">${icon(t)} ${esc(t.title)}</div><div class="meta"><span class="pill cat" style="background:${c.color}">${esc(t.category)}</span><span class="pill status">${esc(t.status)}</span><span class="pill ${pc}">${pn}</span></div><div class="when" style="font-size:15px;margin-top:10px">${dueText(t)}${t.startTime?` · ${t.startTime}${t.endTime?`–${t.endTime}`:""}`:""}</div></div></div>${t.notes?`<div class="taskDetailNotes">${linkifyText(t.notes)}</div>`:""}${t.reminder&&t.reminder!=="none"?`<div class="agendaDetailInfo"><b>Rappel</b><br>${reminderLabel(t.reminder)}</div>`:""}<button class="btn soft calendarExportBtn" onclick='addTaskToIPhoneCalendar(${JSON.stringify(t.id)})'>Ajouter au calendrier iPhone${t.calendarExported?" · déjà exporté":""}</button><div class="taskDetailActions"><button class="btn primary" onclick='closeModal();editTask(${JSON.stringify(t.id)})'>✏️ Modifier</button><button class="btn purple" onclick='closeModal();postponeTask(${JSON.stringify(t.id)})'>↻ Reporter</button><button class="btn soft" onclick='toggleDone(${JSON.stringify(t.id)});closeModal()'>✓ ${done(t)?"Réouvrir":"Terminer"}</button><button class="btn soft" onclick='closeModal();deleteTask(${JSON.stringify(t.id)})'>🗑️ Supprimer</button></div></div></div>`;
 }
 
 function fill(id,arr,empty="Aucune tâche"){const el=$(id);if(el)el.innerHTML=arr.length?arr.map(taskHTML).join(""):`<div class="empty">${empty}</div>`}
@@ -998,6 +1066,13 @@ function openAgendaSettings(){
      <button class="btn soft" style="width:100%" onclick="openHiddenEventsManager()">👁️ Voir les événements masqués (${state.hiddenCalendarEvents.length})</button>
    </div>
    <div class="agendaSettingsBlock">
+     <div class="dangerZone">
+       <div class="dangerZoneTitle">Réinitialisation totale</div>
+       <div class="dangerZoneText">Efface toutes les tâches, notes, contacts, groupes, couleurs, calendriers, événements masqués et préférences locales de Coordo sur cet appareil.</div>
+       <button class="btnDanger" onclick="openTotalReset()">Tout remettre à zéro</button>
+     </div>
+   </div>
+   <div class="agendaSettingsBlock">
      <div class="agendaSettingsTitle">Sauvegarde</div>
      <button class="btn soft" style="width:100%;margin-bottom:8px" onclick="exportBackup()">💾 Sauvegarder dans Fichiers</button>
      <button class="btn soft" style="width:100%" onclick="$('restoreFile').click()">📂 Restaurer depuis Fichiers</button>
@@ -1030,6 +1105,26 @@ function openHiddenEventsManager(){
        </div>`).join(""):'<div class="empty">Aucun événement masqué.</div>'}
    </div>
  </div></div>`;
+}
+
+
+function openTotalReset(){
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:80dvh">
+   <div class="modalHeader"><h3>Réinitialisation totale</h3><button class="close" onclick="openAgendaSettings()">×</button></div>
+   <div class="dangerZone">
+     <div class="dangerZoneTitle">Attention : action irréversible</div>
+     <div class="dangerZoneText">Cette action effacera toutes les données locales de Coordo sur cet appareil. Fais une sauvegarde avant si tu veux pouvoir les récupérer.</div>
+     <div class="field"><label>Tape RESET pour confirmer</label><input id="resetConfirmText" placeholder="RESET"></div>
+     <button class="btnDanger" onclick="performTotalReset()">Confirmer la réinitialisation</button>
+   </div>
+ </div></div>`;
+}
+function performTotalReset(){
+ const txt=($("resetConfirmText")?.value||"").trim().toUpperCase();
+ if(txt!=="RESET")return alert("Tape RESET pour confirmer.");
+ if(!confirm("Dernière confirmation : effacer définitivement toutes les données locales de Coordo ?"))return;
+ localStorage.removeItem(STORAGE);
+ location.reload();
 }
 
 function editHighlightColor(i){
@@ -1177,7 +1272,7 @@ function postponeTask(id){
 }
 
 function openTaskModal(date="",task=null){
- const t=task||{title:"",category:"Coordo",type:"Autre",status:"À faire",priority:"normale",date:date||todayISO(),allDay:false,startTime:"",endTime:"",notes:"",quick:false};
+ const t=task||{title:"",category:"Coordo",type:"Autre",status:"À faire",priority:"normale",date:date||todayISO(),allDay:false,startTime:"",endTime:"",notes:"",quick:false,reminder:"none",calendarExported:false};
  $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal">
    <div class="modalHeader"><h3>${task?"Modifier la tâche":"Nouvelle tâche"}</h3><button class="close" onclick="closeModal()">×</button></div>
    <div class="preview"><div id="previewBar" class="previewBar"></div><div><div id="previewTitle" class="previewTitle">Nouvelle tâche</div><div class="previewMeta"><span id="previewCat" class="pill cat">Coordo</span><span id="previewPrio" class="pill pNorm">Normale</span></div></div></div>
@@ -1193,6 +1288,13 @@ function openTaskModal(date="",task=null){
     <div class="field"><label>Heure fin</label><input id="mEnd" type="time" value="${t.endTime||""}" oninput="checkConflict()" onchange="checkConflict()"></div>
    </div>
    <div id="conflictBox" class="conflictBox"></div>
+   <div class="field"><label>Rappel iPhone</label><select id="mReminder">
+     <option value="none" ${t.reminder==="none"?"selected":""}>Aucun</option>
+     <option value="10m" ${t.reminder==="10m"?"selected":""}>10 min avant</option>
+     <option value="1h" ${t.reminder==="1h"?"selected":""}>1 h avant</option>
+     <option value="2h" ${t.reminder==="2h"?"selected":""}>2 h avant</option>
+     <option value="1d" ${t.reminder==="1d"?"selected":""}>1 jour avant</option>
+   </select></div>
    <div class="field"><label>Surlignage</label><select id="mHighlight"><option value="">Aucun</option>${state.highlightColors.map(c=>`<option value="${c.color}" ${state.eventHighlights["task|"+t.id]===c.color?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>
    <div class="field"><label>Notes</label><textarea id="mNotes" placeholder="Détails, lien, personnes à contacter…">${esc(t.notes||"")}</textarea></div>
    <div class="field"><label><input id="mQuick" type="checkbox" style="width:auto;min-height:0" ${t.quick?"checked":""}> Garder aussi dans Notes</label></div>
@@ -1253,7 +1355,7 @@ function saveTask(){
    const s=timeMin($("mStart").value),e=timeMin($("mEnd").value);
    if(s!==null&&e!==null&&e<=s)return alert("L’heure de fin doit être après l’heure de début.");
  }
- const data={id:editingId||String(Date.now()+Math.random()),title,category:$("mCategory").value,type:$("mType").value,status:$("mStatus").value,priority:$("mPriority").value,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mAllDay").checked?"":$("mStart").value,endTime:$("mAllDay").checked?"":$("mEnd").value,notes:$("mNotes").value.trim(),quick:$("mQuick").checked,createdAt:editingId?(state.tasks.find(t=>t.id===editingId)?.createdAt||Date.now()):Date.now()};
+ const data={id:editingId||String(Date.now()+Math.random()),title,category:$("mCategory").value,type:$("mType").value,status:$("mStatus").value,priority:$("mPriority").value,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mAllDay").checked?"":$("mStart").value,endTime:$("mAllDay").checked?"":$("mEnd").value,notes:$("mNotes").value.trim(),quick:$("mQuick").checked,reminder:$("mReminder").value,calendarExported:editingId?(state.tasks.find(t=>t.id===editingId)?.calendarExported||false):false,createdAt:editingId?(state.tasks.find(t=>t.id===editingId)?.createdAt||Date.now()):Date.now()};
  const cf=externalCalendarConflicts(data,editingId);
  if(cf.length&&!confirm("⚠️ Conflit d’horaire avec :\n\n"+cf.map(i=>`${i.title} (${i.start||"?"}–${i.end||"?"}) · ${i.source||""}`).join("\n")+"\n\nAjouter quand même ?"))return;
  if(editingId)state.tasks=state.tasks.map(t=>t.id===editingId?data:t);else state.tasks.push(data);
