@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       .split("BEGIN:VEVENT")
       .slice(1);
 
-    const parseICSDate = value => {
+    const parseICSDate = (value, propertyLine = "") => {
       if (!value) {
         return { date: "", time: "" };
       }
@@ -81,6 +81,24 @@ export default async function handler(req, res) {
 
       // Date + heure : 20260911T173000
       if (/^\d{8}T\d{6}$/.test(clean)) {
+        const zoneMatch=propertyLine.match(/TZID=(?:"([^"]+)"|([^;:]+))/);
+        const zoneRaw=zoneMatch?.[1]||zoneMatch?.[2];
+        const zones={"Romance Standard Time":"Europe/Paris","W. Europe Standard Time":"Europe/Berlin","GMT Standard Time":"Europe/London"};
+        const zone=zones[zoneRaw]||zoneRaw;
+        if(value.endsWith("Z")||zone){
+          const wall=Date.UTC(+clean.slice(0,4),+clean.slice(4,6)-1,+clean.slice(6,8),+clean.slice(9,11),+clean.slice(11,13),+clean.slice(13,15));
+          let instant=wall;
+          if(!value.endsWith("Z")){
+            const sourceFormatter=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+            for(let pass=0;pass<3;pass++){
+              const parts=Object.fromEntries(sourceFormatter.formatToParts(new Date(instant)).map(p=>[p.type,p.value]));
+              const displayed=Date.UTC(+parts.year,+parts.month-1,+parts.day,+parts.hour,+parts.minute,+parts.second);
+              instant+=wall-displayed;
+            }
+          }
+          const parts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Luxembourg',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(instant)).map(p=>[p.type,p.value]));
+          return {date:`${parts.year}-${parts.month}-${parts.day}`,time:`${parts.hour}:${parts.minute}`};
+        }
         return {
           date:
             `${clean.slice(0, 4)}-` +
@@ -142,10 +160,13 @@ export default async function handler(req, res) {
               .trim()
           : "";
 
-        const start = parseICSDate(startRaw);
-        const end = parseICSDate(endRaw);
+        const start = parseICSDate(startRaw, startLine);
+        const end = parseICSDate(endRaw, endLine);
 
         return {
+          uid: getValue("UID"),
+          recurrenceId: getValue("RECURRENCE-ID"),
+          cancelled: getValue("STATUS") === "CANCELLED",
           title: summary || "Événement",
           location,
           date: start.date,
