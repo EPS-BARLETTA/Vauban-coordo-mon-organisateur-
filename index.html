@@ -486,7 +486,7 @@ textarea{resize:vertical;min-height:120px}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.23</div>
+<div class="versionTag">V10.24</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -517,7 +517,6 @@ textarea{resize:vertical;min-height:120px}
       <button class="stat" onclick="openHomeNotes()"><span class="tileIcon">✎</span><b id="homeNotes">0</b><span>Notes</span><small>Post-it et archives ›</small></button>
     </div>
     <button class="btn homeReminderButton" onclick="openDueReminders()">🔔 Rappels à consulter <b id="homeReminderCount">0</b><span>›</span></button>
-    <button class="btn homeReminderButton" onclick="openNotesArchive()">🗂️ Notes archivées <b id="homeArchiveCount">0</b><span>›</span></button>
     <div class="sectionHead"><h2 id="homeTasksTitle" style="margin:0;font-size:20px">À faire</h2><select id="homeCompletion" aria-label="Tâches à afficher" onchange="renderHome()" style="width:auto;font-size:12px"><option value="active">Actives</option><option value="done">Terminées</option></select></div>
     <div class="sectionCard" id="homeTasksList"></div>
   </section>
@@ -923,7 +922,7 @@ function renderHome(){
  $("homeDate").textContent=fmtLong();
  for(const [key,id] of Object.entries({todo:'homeTodo',urgent:'homeUrgent',late:'homeLate'}))$(id).textContent=homeBucketItems(key).length;
  $("homeReminderCount").textContent=dueReminders().length;
- $("homeArchiveCount").textContent=state.postits.filter(n=>n.archived).length;
+
  $("homeNotes").textContent=state.postits.filter(n=>!n.archived).length;
  const completed=$("homeCompletion").value==='done';
  const items=completed?state.tasks.filter(done).sort(smartSort):homeBucketItems(homeBucket);
