@@ -480,7 +480,7 @@ textarea{resize:vertical;min-height:120px}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.20</div>
+<div class="versionTag">V10.21</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -962,7 +962,7 @@ function renderPostits(){
   root.innerHTML=POSTIT_COLORS.map(color=>'<button class="archiveFolderCard" style="background:'+color+'" onclick=\''+'selectArchiveColor('+JSON.stringify(color)+')'+'\'><strong>Notes '+noteColorLabel(color).toLowerCase()+'</strong><span>'+archived.filter(n=>n.color===color).length+' note(s) · '+state.noteFolders.filter(f=>f.color===color).length+' dossier(s) ›</span></button>').join('');return;
  }
  const folder=state.noteFolders.find(f=>f.id===archiveFolderId&&f.color===archiveColor);
- const heading='<div class="archiveBreadcrumb"><button class="btn soft" onclick="setPostitView(true)">Toutes les couleurs</button><button class="btn soft" onclick=\''+'selectArchiveColor('+JSON.stringify(archiveColor)+')'+'\'>Notes '+noteColorLabel(archiveColor).toLowerCase()+'</button>'+(folder?'<strong>'+esc(folder.name)+'</strong><button class="btn soft" onclick=\''+'renameNoteFolder('+JSON.stringify(folder.id)+')'+'\'>Renommer le dossier</button>':'')+'</div>';
+ const heading='<div class="archiveBreadcrumb"><button class="btn soft" onclick="setPostitView(true)">Toutes les couleurs</button><button class="btn soft" onclick=\''+'selectArchiveColor('+JSON.stringify(archiveColor)+')'+'\'>Notes '+noteColorLabel(archiveColor).toLowerCase()+'</button>'+(folder?'<strong>'+esc(folder.name)+'</strong><button class="btn soft" onclick=\''+'renameNoteFolder('+JSON.stringify(folder.id)+')'+'\'>Renommer le dossier</button><button class="btn soft" onclick="'+esc('deleteNoteFolder('+JSON.stringify(folder.id)+')')+'">Supprimer le dossier</button>':'')+'</div>';
  if(folder){
   const notes=archived.filter(n=>n.folderId===folder.id).sort((a,b)=>b.updatedAt-a.updatedAt);
   root.innerHTML=heading+(notes.length?notes.map(postitCardHTML).join(''):'<div class="empty">Ce dossier est vide.</div>');return;
@@ -973,6 +973,16 @@ function renderPostits(){
 function createNoteFolder(color){
  const name=prompt('Nom du nouveau dossier');if(!name||!name.trim())return;
  const folder=ensureNoteFolder(color,name.trim().slice(0,80));save();selectArchiveFolder(folder.id);
+}
+function deleteNoteFolder(id){
+ const folder=state.noteFolders.find(f=>f.id===id);if(!folder)return;
+ const notes=state.postits.filter(n=>n.folderId===id);
+ const destination=folder.name.toLocaleLowerCase('fr')==='sans dossier'?'Notes récupérées':'Sans dossier';
+ const message='Supprimer le dossier « '+folder.name+' » ?'+(notes.length?'\n\nLes '+notes.length+' note(s) seront conservées dans « '+destination+' » de la même couleur.':'');
+ if(!confirm(message))return;
+ state.noteFolders=state.noteFolders.filter(f=>f.id!==id);
+ if(notes.length){const target=ensureNoteFolder(folder.color,destination);notes.forEach(n=>{n.folderId=target.id})}
+ archiveFolderId=null;archiveColor=folder.color;save();renderPostits();renderHome();
 }
 function renameNoteFolder(id){
  const folder=state.noteFolders.find(f=>f.id===id);if(!folder)return;
