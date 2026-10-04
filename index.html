@@ -477,10 +477,16 @@ textarea{resize:vertical;min-height:120px}
 .archiveFolderCard{border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:18px;text-align:left;color:var(--text);min-height:100px;box-shadow:var(--shadow)}
 .archiveFolderCard strong{display:block;font-size:18px;overflow-wrap:anywhere}.archiveFolderCard span{display:block;font-size:12px;margin-top:10px;color:#526078}
 .archiveBreadcrumb{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px}
+.folderSwipe{position:relative;overflow:hidden;border-radius:16px;min-width:0;background:#dc3545}
+.folderSwipeFront{position:relative;z-index:1;width:100%;height:100%;touch-action:pan-y;transition:transform .18s ease;box-shadow:none}
+.folderSwipeDelete{position:absolute;right:0;top:0;bottom:0;width:104px;border:0;background:#dc3545;color:#fff;font-weight:800;font-size:13px}
+.folderSwipeDelete:disabled{visibility:hidden}
+.archiveSwipeHint{grid-column:1/-1;font-size:12px;color:var(--muted);margin:0}
+@media(prefers-reduced-motion:reduce){.folderSwipeFront{transition:none}}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.21</div>
+<div class="versionTag">V10.22</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -962,26 +968,71 @@ function renderPostits(){
   root.innerHTML=POSTIT_COLORS.map(color=>'<button class="archiveFolderCard" style="background:'+color+'" onclick=\''+'selectArchiveColor('+JSON.stringify(color)+')'+'\'><strong>Notes '+noteColorLabel(color).toLowerCase()+'</strong><span>'+archived.filter(n=>n.color===color).length+' note(s) · '+state.noteFolders.filter(f=>f.color===color).length+' dossier(s) ›</span></button>').join('');return;
  }
  const folder=state.noteFolders.find(f=>f.id===archiveFolderId&&f.color===archiveColor);
- const heading='<div class="archiveBreadcrumb"><button class="btn soft" onclick="setPostitView(true)">Toutes les couleurs</button><button class="btn soft" onclick=\''+'selectArchiveColor('+JSON.stringify(archiveColor)+')'+'\'>Notes '+noteColorLabel(archiveColor).toLowerCase()+'</button>'+(folder?'<strong>'+esc(folder.name)+'</strong><button class="btn soft" onclick=\''+'renameNoteFolder('+JSON.stringify(folder.id)+')'+'\'>Renommer le dossier</button><button class="btn soft" onclick="'+esc('deleteNoteFolder('+JSON.stringify(folder.id)+')')+'">Supprimer le dossier</button>':'')+'</div>';
+ const heading='<div class="archiveBreadcrumb"><button class="btn soft" onclick="setPostitView(true)">Toutes les couleurs</button><button class="btn soft" onclick=\''+'selectArchiveColor('+JSON.stringify(archiveColor)+')'+'\'>Notes '+noteColorLabel(archiveColor).toLowerCase()+'</button>'+(folder?'<strong>'+esc(folder.name)+'</strong><button class="btn soft" onclick=\''+'renameNoteFolder('+JSON.stringify(folder.id)+')'+'\'>Renommer le dossier</button>':'')+'</div>';
  if(folder){
   const notes=archived.filter(n=>n.folderId===folder.id).sort((a,b)=>b.updatedAt-a.updatedAt);
   root.innerHTML=heading+(notes.length?notes.map(postitCardHTML).join(''):'<div class="empty">Ce dossier est vide.</div>');return;
  }
  const folders=state.noteFolders.filter(f=>f.color===archiveColor);
- root.innerHTML=heading+'<button class="btn primary" onclick=\''+'createNoteFolder('+JSON.stringify(archiveColor)+')'+'\'>+ Nouveau dossier</button>'+folders.map(f=>'<button class="archiveFolderCard" style="background:'+f.color+'" onclick=\''+'selectArchiveFolder('+JSON.stringify(f.id)+')'+'\'><strong>📁 '+esc(f.name)+'</strong><span>'+archived.filter(n=>n.folderId===f.id).length+' note(s) ›</span></button>').join('');
+ root.innerHTML=heading+'<button class="btn primary" onclick=\''+'createNoteFolder('+JSON.stringify(archiveColor)+')'+'\'>+ Nouveau dossier</button>'+'<p class="archiveSwipeHint">Glisse un dossier vers la gauche pour le supprimer avec ses notes.</p>'+folders.map(f=>folderSwipeHTML(f,archived.filter(n=>n.folderId===f.id).length)).join('');
+ bindFolderSwipes();
 }
 function createNoteFolder(color){
  const name=prompt('Nom du nouveau dossier');if(!name||!name.trim())return;
  const folder=ensureNoteFolder(color,name.trim().slice(0,80));save();selectArchiveFolder(folder.id);
 }
+function folderSwipeHTML(folder,count){
+ const open='if(!this.closest(".folderSwipe").dataset.dragged)selectArchiveFolder('+JSON.stringify(folder.id)+')';
+ return '<div class="folderSwipe"><button class="folderSwipeDelete" disabled aria-label="'+esc('Supprimer '+folder.name+' et toutes ses notes')+'" onclick="'+esc('deleteNoteFolder('+JSON.stringify(folder.id)+')')+'">Supprimer</button><button class="archiveFolderCard folderSwipeFront" style="background:'+folder.color+'" onclick="'+esc(open)+'" aria-label="'+esc('Ouvrir '+folder.name+'. Glisser vers la gauche pour supprimer.')+'"><strong>📁 '+esc(folder.name)+'</strong><span>'+count+' note(s) ›</span></button></div>';
+}
+function setFolderSwipeOpen(row,open){
+ row.classList.toggle('swipeOpen',open);
+ row.querySelector('.folderSwipeFront').style.transform=open?'translateX(-104px)':'translateX(0)';
+ const remove=row.querySelector('.folderSwipeDelete');remove.disabled=!open;
+}
+function bindFolderSwipes(){
+ document.querySelectorAll('.folderSwipe').forEach(row=>{
+  const front=row.querySelector('.folderSwipeFront');
+  let startX=0,startY=0,base=0,dragging=false,active=false;
+  front.addEventListener('pointerdown',e=>{
+   if(e.button!==undefined&&e.button!==0)return;
+   startX=e.clientX;startY=e.clientY;base=row.classList.contains('swipeOpen')?-104:0;dragging=false;active=true;
+  });
+  front.addEventListener('pointermove',e=>{
+   if(!active)return;
+   const dx=e.clientX-startX,dy=e.clientY-startY;
+   if(!dragging){
+    if(Math.abs(dy)>12&&Math.abs(dy)>Math.abs(dx)){active=false;return}
+    if(Math.abs(dx)<12||Math.abs(dx)<=Math.abs(dy))return;
+    dragging=true;row.dataset.dragged='1';
+    document.querySelectorAll('.folderSwipe.swipeOpen').forEach(other=>{if(other!==row)setFolderSwipeOpen(other,false)});
+    front.style.transition='none';
+    try{front.setPointerCapture(e.pointerId)}catch(err){}
+   }
+   e.preventDefault();front.style.transform='translateX('+Math.max(-104,Math.min(0,base+dx))+'px)';
+  });
+  const finish=e=>{
+   if(!active)return;active=false;
+   if(!dragging)return;
+   front.style.transition='';
+   setFolderSwipeOpen(row,base+(e.clientX-startX)<-52);
+   setTimeout(()=>delete row.dataset.dragged,350);
+  };
+  front.addEventListener('pointerup',finish);
+  front.addEventListener('pointercancel',()=>{active=false;front.style.transition='';setFolderSwipeOpen(row,base<0);setTimeout(()=>delete row.dataset.dragged,350)});
+  row.addEventListener('keydown',e=>{
+   if(e.key==='ArrowLeft'||e.key==='Delete'){e.preventDefault();setFolderSwipeOpen(row,true);row.querySelector('.folderSwipeDelete').focus()}
+   if(e.key==='Escape'||e.key==='ArrowRight'){e.preventDefault();setFolderSwipeOpen(row,false);front.focus()}
+  });
+ });
+}
 function deleteNoteFolder(id){
  const folder=state.noteFolders.find(f=>f.id===id);if(!folder)return;
- const notes=state.postits.filter(n=>n.folderId===id);
- const destination=folder.name.toLocaleLowerCase('fr')==='sans dossier'?'Notes récupérées':'Sans dossier';
- const message='Supprimer le dossier « '+folder.name+' » ?'+(notes.length?'\n\nLes '+notes.length+' note(s) seront conservées dans « '+destination+' » de la même couleur.':'');
+ const count=state.postits.filter(n=>n.folderId===id).length;
+ const message='Supprimer définitivement le dossier « '+folder.name+' » et les '+count+' note(s) qu’il contient ?\n\nCette suppression est définitive.';
  if(!confirm(message))return;
+ state.postits=state.postits.filter(n=>n.folderId!==id);
  state.noteFolders=state.noteFolders.filter(f=>f.id!==id);
- if(notes.length){const target=ensureNoteFolder(folder.color,destination);notes.forEach(n=>{n.folderId=target.id})}
  archiveFolderId=null;archiveColor=folder.color;save();renderPostits();renderHome();
 }
 function renameNoteFolder(id){
