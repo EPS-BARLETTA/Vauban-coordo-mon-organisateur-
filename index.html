@@ -447,6 +447,22 @@ textarea{resize:vertical;min-height:120px}
 .dangerZoneTitle{font-size:13px;font-weight:900;margin-bottom:6px;color:#8b2b2b}
 .dangerZoneText{font-size:11px;line-height:1.45;color:#7a4a4a;margin-bottom:10px}
 .btnDanger{width:100%;border:1px solid #d8a1a1;background:#fff;color:#8b2b2b;padding:11px 14px;border-radius:12px;font-weight:850}
+/* Accueil sans listes à faire défiler */
+.homeTiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px}
+.homeTiles .stat{text-align:left;padding:18px;border-radius:22px;min-height:146px}
+.homeTiles .stat b{font-size:36px;margin-top:9px}
+.homeTiles .stat span{font-size:17px;color:var(--text);font-weight:800}
+.homeTiles .stat .tileIcon{font-size:22px;margin:0}
+.homeTiles .stat small{display:block;color:var(--muted);font-size:11px;margin-top:8px}
+.homeTiles .stat:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+.homeReminderButton{display:flex;width:100%;align-items:center;gap:10px;margin-top:14px;text-align:left}
+.homeReminderButton b{background:var(--blue2);padding:4px 9px;border-radius:999px}
+.homeReminderButton span{margin-left:auto}
+.homeHint{color:var(--muted);font-size:12px;text-align:center}
+.reminderItem{border-top:1px solid var(--line);padding:14px 0}
+.reminderItem:first-child{border-top:0}
+.reminderItem .actions{margin-top:8px}
+@media(min-width:850px){.homeTiles{max-width:720px}.homeReminderButton{max-width:720px}}
 </style>
 </head>
 <body>
@@ -474,57 +490,21 @@ textarea{resize:vertical;min-height:120px}
       <div class="hello"><h1>Hello</h1><div id="homeDate" class="date"></div></div>
       <button class="btn primary" onclick="openTaskModal()">+ Tâche</button>
     </div>
-    <div class="stats">
-      <div class="stat"><b id="homeTodo">0</b><span>À faire</span></div>
-      <div class="stat"><b id="homeUrgent">0</b><span>Urgentes</span></div>
-      <div class="stat"><b id="homeLate">0</b><span>En retard</span></div>
-      <div class="stat"><b id="homeToday">0</b><span>Aujourd’hui</span></div>
+    <div class="stats homeTiles">
+      <button class="stat" onclick="openHomeBucket('todo')"><span class="tileIcon">✓</span><b id="homeTodo">0</b><span>À faire</span><small>Voir les tâches ›</small></button>
+      <button class="stat" onclick="openHomeBucket('urgent')"><span class="tileIcon">⚡</span><b id="homeUrgent">0</b><span>Urgent</span><small>Voir les tâches ›</small></button>
+      <button class="stat" onclick="openHomeBucket('late')"><span class="tileIcon">◷</span><b id="homeLate">0</b><span>En retard</span><small>Voir les tâches ›</small></button>
+      <button class="stat" onclick="openHomeBucket('today')"><span class="tileIcon">▣</span><b id="homeToday">0</b><span>Aujourd’hui</span><small>Tâches et événements ›</small></button>
     </div>
-
-    <div class="section sectionCard">
-      <div class="sectionHead">
-        <div class="sectionTitle"><div class="ico">⚡</div><div><h2>Maintenant</h2><div class="sub">Les tâches prioritaires du moment</div></div></div>
-      </div>
-      <div id="homeNow"></div>
-    </div>
-
-    <div class="section sectionCard">
-      <div class="sectionHead">
-        <div class="sectionTitle"><div class="ico">▣</div><div><h2>Aujourd’hui</h2><div class="sub">Tes tâches et rendez-vous du jour</div></div></div>
-      </div>
-      <div id="homeTodayList"></div>
-    </div>
-
-    <div class="section sectionCard">
-      <div class="sectionHead">
-        <div class="sectionTitle"><div class="ico">◴</div><div><h2>Demain</h2><div class="sub">Ce qui t’attend demain</div></div></div>
-      </div>
-      <div id="homeTomorrow"></div>
-    </div>
-
-    <div class="section sectionCard">
-      <div class="sectionHead">
-        <div class="sectionTitle"><div class="ico">↻</div><div><h2>À relancer</h2><div class="sub">Mails, dossiers ou actions en attente de suivi</div></div></div>
-      </div>
-      <div id="homeFollow"></div>
-    </div>
-
-    <div class="section">
-      <details class="sectionCard">
-        <summary class="sectionHead">
-          <div class="sectionTitle"><div class="ico">□</div><div><h2>Plus tard <span id="laterCount"></span></h2><div class="sub">Le reste de tes tâches planifiées</div></div></div>
-          <div>›</div>
-        </summary>
-        <div id="homeLater"></div>
-      </details>
-    </div>
+    <button class="btn homeReminderButton" onclick="openDueReminders()">🔔 Rappels à consulter <b id="homeReminderCount">0</b><span>›</span></button>
+    <p class="homeHint">Choisis une case pour voir les détails.</p>
   </section>
 
   <section id="page-all" class="page">
     <div class="topbar"><div class="hello"><h1>Tâches</h1><div class="date">Tout au même endroit.</div></div><button class="btn primary" onclick="openTaskModal()">+ Ajouter</button></div>
     <div class="toolbar">
       <select id="filterCategory" onchange="renderAll()"></select>
-      <select id="filterStatus" onchange="renderAll()"><option value="Tous">Tous statuts</option><option selected>À faire</option><option>En cours</option><option>En attente</option><option>Terminé</option></select>
+      <select id="filterStatus" onchange="renderAll()"><option value="Actives" selected>À faire</option><option value="Terminé">Terminées</option><option value="Tous">Toutes les tâches</option></select>
       <select id="sortMode" onchange="renderAll()"><option value="smart">Priorité intelligente</option><option value="date">Par date</option><option value="priority">Par priorité</option><option value="category">Par catégorie</option></select>
     </div>
     <div class="sectionCard" id="allList"></div>
@@ -665,13 +645,16 @@ state.contactGroups=state.contactGroups.map((g,i)=>({
 }));
 for(const c of DEFAULT_CATEGORIES){if(!state.categories.some(x=>x.name===c.name))state.categories.push({...c})}
 state.tasks=state.tasks.map(t=>({
- id:t.id||String(Date.now()+Math.random()),
+ ...t,id:t.id||String(Date.now()+Math.random()),
  title:t.title||"Sans titre",category:t.category||"Coordo",type:t.type||"Autre",
  status:t.status||"À faire",priority:t.priority||"normale",date:t.date||"",
  allDay:!!t.allDay,startTime:t.startTime||"",endTime:t.endTime||"",
  notes:t.notes||"",quick:!!(t.quick||t.inbox),reminder:t.reminder||"none",calendarExported:!!t.calendarExported,createdAt:t.createdAt||Date.now()
 }));
 
+if(!state.reminders||typeof state.reminders!=="object"||Array.isArray(state.reminders))state.reminders={};
+if(!state.customFieldLabel)state.customFieldLabel="Champ personnalisé";
+state.calendars.forEach(c=>{if(!c.id)c.id=String(Date.now()+Math.random())});
 let editingId=null;
 let agendaView='list';
 let agendaMonthDate=new Date();
@@ -723,6 +706,81 @@ function dueText(t){
 function icon(t){return({Mail:"✉️",Appel:"📞","Réunion":"👥",Document:"📄",Relance:"🔁","Idée":"💡",Autre:"•"})[t.type||"Autre"]}
 
 
+function renameCustomField(){
+ const value=prompt("Nom de ton champ personnalisé (pour toutes les tâches)",state.customFieldLabel);
+ if(!value||!value.trim())return;
+ state.customFieldLabel=value.trim().slice(0,80);save();
+ const input=$("mCustom");if(input)input.previousElementSibling.textContent=state.customFieldLabel;
+}
+function reminderKey(i){
+ if(i.kind==='task')return 'task|'+i.task.id;
+ return i.uid?JSON.stringify(['event',i.calendarId,i.uid,i.recurrenceId||'']):eventKey(i);
+}
+function reminderItems(){
+ return [...state.tasks.map(t=>({kind:'task',task:t,date:t.date,start:t.startTime,title:t.title,source:t.category})),...allExternalAgendaItemsIncludingHidden()];
+}
+function resolveReminder(r){
+ const current=reminderItems().find(i=>reminderKey(i)===r.key);
+ if(current)return current;
+ if(r.key.startsWith('task|'))return null;
+ const calendar=state.calendars.find(c=>c.id===r.snapshot?.calendarId);
+ // After a successful refresh, an absent event has been removed from the feed.
+ if(!calendar||calendar.lastSync)return null;
+ return r.snapshot||null;
+}
+function reminderDue(r,i){
+ if(r.mode==='none'||!i||i.cancelled||(i.task&&done(i.task)))return null;
+ if(r.snoozedUntil)return new Date(r.snoozedUntil).getTime();
+ if(r.mode==='custom')return new Date(r.customAt).getTime();
+ if(!i.date)return null;
+ const start=new Date(i.date+'T'+(i.start||'09:00')+':00').getTime();
+ const minutes={'at':0,'10m':10,'30m':30,'1h':60,'2h':120,'1d':1440};
+ return Object.hasOwn(minutes,r.mode)?start-minutes[r.mode]*60000:null;
+}
+function dueReminders(now=Date.now()){
+ return Object.values(state.reminders||{}).map(r=>{
+   const item=resolveReminder(r),due=reminderDue(r,item);
+   return {r,item,due};
+ }).filter(x=>x.item&&Number.isFinite(x.due)&&x.due<=now&&x.r.seenDue!==x.due).sort((a,b)=>a.due-b.due);
+}
+function openReminderEditor(key){
+ const i=reminderItems().find(i=>reminderKey(i)===key);if(!i)return;
+ const r=state.reminders[key]||{mode:'1d'};
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Rappel Coordo</h3><button class="close" onclick="closeModal()">×</button></div><div class="agendaDetailTitle">${esc(i.title)}</div><p class="secretHint">Visible à l’ouverture de Coordo sur cet appareil. Pour une journée entière, les délais sont calculés à partir de 9 h.</p><div class="field"><label>Quand ?</label><select id="localReminderMode" onchange="$('localReminderCustom').classList.toggle('hidden',this.value!=='custom')">${Object.entries({'at':'À l’heure de l’événement','10m':'10 min avant','30m':'30 min avant','1h':'1 h avant','2h':'2 h avant','1d':'La veille','custom':'Date et heure précises'}).map(([v,l])=>`<option value="${v}" ${v===r.mode?'selected':''}>${l}</option>`).join('')}</select></div><div id="localReminderCustom" class="field ${r.mode==='custom'?'':'hidden'}"><label>Date et heure du rappel</label><input id="localReminderAt" type="datetime-local" value="${esc(r.customAt||'')}"></div><div class="modalFooter"><button class="btn" onclick='removeLocalReminder(${JSON.stringify(key)})'>Supprimer le rappel</button><button class="btn primary" onclick='saveLocalReminder(${JSON.stringify(key)})'>Enregistrer</button></div></div></div>`;
+}
+function saveLocalReminder(key){
+ const item=reminderItems().find(i=>reminderKey(i)===key);if(!item)return;
+ const mode=$("localReminderMode").value,customAt=$("localReminderAt").value;
+ if(mode==='custom'&&!Number.isFinite(new Date(customAt).getTime()))return alert('Choisis une date et une heure.');
+ if(mode!=='custom'&&!item.date)return alert('Ajoute une date à la tâche ou choisis une date précise pour le rappel.');
+ const snapshot={...item};delete snapshot.task;
+ state.reminders[key]={key,mode,customAt,snapshot,seenDue:null,snoozedUntil:null};
+ closeModal();renderAll();
+}
+function removeLocalReminder(key){
+ state.reminders[key]={key,mode:'none'};closeModal();renderAll();
+}
+function openDueReminders(){
+ const rows=dueReminders();
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Rappels à consulter · ${rows.length}</h3><button class="close" onclick="closeModal()">×</button></div>${rows.length?rows.map(({r,item,due})=>`<div class="reminderItem"><div class="eventTitle">${esc(item.title)}</div><div class="eventMeta">${esc(item.source||'')} · ${item.date?fmtDate(item.date):'Sans date'} ${esc(item.start||'')}</div><div class="eventMeta">Rappel du ${new Date(due).toLocaleString('fr-FR')}</div><div class="actions"><button onclick='ackReminder(${JSON.stringify(r.key)},${due})'>✓ Vu</button><button onclick='snoozeReminder(${JSON.stringify(r.key)})'>Reporter…</button></div></div>`).join(''):'<div class="empty">Aucun rappel arrivé à échéance.</div>'}</div></div>`;
+}
+function ackReminder(key,due){
+ const r=state.reminders[key];if(!r)return;r.seenDue=due;save();renderHome();openDueReminders();
+}
+function snoozeReminder(key){
+ const r=state.reminders[key];if(!r)return;
+ const d=new Date(Date.now()+3600000),local=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto"><div class="modalHeader"><h3>Reporter le rappel</h3><button class="close" onclick="openDueReminders()">×</button></div><div class="field"><label>Nouvelle date et heure</label><input id="snoozeAt" type="datetime-local" value="${local}"></div><button class="btn primary" onclick='saveSnooze(${JSON.stringify(key)})'>Enregistrer</button></div></div>`;
+}
+function saveSnooze(key){
+ const value=$("snoozeAt").value;
+ if(!Number.isFinite(new Date(value).getTime())||new Date(value).getTime()<=Date.now())return alert('Choisis une date et une heure futures.');
+ state.reminders[key].snoozedUntil=value;state.reminders[key].seenDue=null;save();renderHome();openDueReminders();
+}
+function checkOpeningReminders(){
+ renderHome();
+ if(!$("modalRoot").innerHTML.trim()&&dueReminders().length)openDueReminders();
+}
 function reminderLabel(v){
  return ({none:"Aucun","10m":"10 min avant","1h":"1 h avant","2h":"2 h avant","1d":"1 jour avant"})[v||"none"]||"Aucun";
 }
@@ -822,21 +880,25 @@ function fillHome(id,arr,empty="Aucune tâche"){const el=$(id);if(el)el.innerHTM
 function linkifyText(s){return esc(s||"").replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:var(--blue);word-break:break-all">$1</a>')}
 function openTaskDetail(id){
  const t=state.tasks.find(x=>x.id===id);if(!t)return;const c=cat(t.category),pc=t.priority==="urgent"?"pUrg":t.priority==="haute"?"pHigh":t.priority==="basse"?"pLow":"pNorm",pn=t.priority==="urgent"?"URGENT":t.priority==="haute"?"Haute":t.priority==="basse"?"Basse":"Normale";
- $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Détail de la tâche</h3><button class="close" onclick="closeModal()">×</button></div><div style="display:grid;grid-template-columns:6px 1fr;gap:12px"><div class="bar" style="background:${c.color}"></div><div><div class="taskDetailTitle">${icon(t)} ${esc(t.title)}</div><div class="meta"><span class="pill cat" style="background:${c.color}">${esc(t.category)}</span><span class="pill status">${esc(t.status)}</span><span class="pill ${pc}">${pn}</span></div><div class="when" style="font-size:15px;margin-top:10px">${dueText(t)}${t.startTime?` · ${t.startTime}${t.endTime?`–${t.endTime}`:""}`:""}</div></div></div>${t.notes?`<div class="taskDetailNotes">${linkifyText(t.notes)}</div>`:""}${t.reminder&&t.reminder!=="none"?`<div class="agendaDetailInfo"><b>Rappel</b><br>${reminderLabel(t.reminder)}</div>`:""}<button class="btn soft calendarExportBtn" onclick='addTaskToIPhoneCalendar(${JSON.stringify(t.id)})'>Ajouter au calendrier iPhone${t.calendarExported?" · déjà exporté":""}</button><div class="taskDetailActions"><button class="btn primary" onclick='closeModal();editTask(${JSON.stringify(t.id)})'>✏️ Modifier</button><button class="btn purple" onclick='closeModal();postponeTask(${JSON.stringify(t.id)})'>↻ Reporter</button><button class="btn soft" onclick='toggleDone(${JSON.stringify(t.id)});closeModal()'>✓ ${done(t)?"Réouvrir":"Terminer"}</button><button class="btn soft" onclick='closeModal();deleteTask(${JSON.stringify(t.id)})'>🗑️ Supprimer</button></div></div></div>`;
+ $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>Détail de la tâche</h3><button class="close" onclick="closeModal()">×</button></div><div style="display:grid;grid-template-columns:6px 1fr;gap:12px"><div class="bar" style="background:${c.color}"></div><div><div class="taskDetailTitle">${icon(t)} ${esc(t.title)}</div><div class="meta"><span class="pill cat" style="background:${c.color}">${esc(t.category)}</span><span class="pill status">${esc(t.status)}</span><span class="pill ${pc}">${pn}</span></div><div class="when" style="font-size:15px;margin-top:10px">${dueText(t)}${t.startTime?` · ${t.startTime}${t.endTime?`–${t.endTime}`:""}`:""}</div></div></div>${t.customField?`<div class="agendaDetailInfo"><b>${esc(state.customFieldLabel)}</b><br>${esc(t.customField)}</div>`:""}${t.notes?`<div class="taskDetailNotes">${linkifyText(t.notes)}</div>`:""}${t.reminder&&t.reminder!=="none"?`<div class="agendaDetailInfo"><b>Rappel</b><br>${reminderLabel(t.reminder)}</div>`:""}<button class="btn soft" style="width:100%;margin-top:12px" onclick='openReminderEditor(${JSON.stringify("task|"+t.id)})'>🔔 ${state.reminders["task|"+t.id]?.mode!==undefined&&state.reminders["task|"+t.id].mode!=="none"?"Modifier le rappel Coordo":"Ajouter un rappel Coordo"}</button><button class="btn soft calendarExportBtn" onclick='addTaskToIPhoneCalendar(${JSON.stringify(t.id)})'>Ajouter au calendrier iPhone${t.calendarExported?" · déjà exporté":""}</button><div class="taskDetailActions"><button class="btn primary" onclick='closeModal();editTask(${JSON.stringify(t.id)})'>✏️ Modifier</button><button class="btn purple" onclick='closeModal();postponeTask(${JSON.stringify(t.id)})'>↻ Reporter</button><button class="btn soft" onclick='toggleDone(${JSON.stringify(t.id)});closeModal()'>✓ ${done(t)?"Réouvrir":"Terminer"}</button><button class="btn soft" onclick='closeModal();deleteTask(${JSON.stringify(t.id)})'>🗑️ Supprimer</button></div></div></div>`;
 }
 
 function fill(id,arr,empty="Aucune tâche"){const el=$(id);if(el)el.innerHTML=arr.length?arr.map(taskHTML).join(""):`<div class="empty">${empty}</div>`}
 
-function renderHome(){
+function homeBucketItems(bucket){
  const open=state.tasks.filter(t=>!done(t));
- $("homeDate").textContent=fmtLong();$("homeTodo").textContent=open.length;$("homeUrgent").textContent=open.filter(t=>t.priority==="urgent").length;$("homeLate").textContent=open.filter(late).length;$("homeToday").textContent=open.filter(t=>t.date===todayISO()).length;
- const today=open.filter(t=>t.date===todayISO()).sort(smartSort);
- const tomorrow=open.filter(t=>t.date===addDaysISO(1)).sort(smartSort);
- const now=open.filter(t=>{if(t.date===todayISO()||t.date===addDaysISO(1))return false;return late(t)||(!t.date&&(t.priority==="urgent"||t.priority==="haute"))}).sort(smartSort).slice(0,5);
- const used=new Set([...today,...tomorrow,...now].map(t=>t.id));
- const follow=open.filter(t=>!used.has(t.id)&&(t.status==="En attente"||t.type==="Relance")).sort(smartSort);follow.forEach(t=>used.add(t.id));
- const later=open.filter(t=>!used.has(t.id)&&t.date&&t.date>addDaysISO(1)).sort(smartSort);
- fillHome("homeNow",now,"Rien à traiter immédiatement.");fillHome("homeTodayList",today,"Rien de prévu aujourd’hui.");fillHome("homeTomorrow",tomorrow,"Rien de prévu demain.");fillHome("homeFollow",follow,"Aucune relance en attente.");$("laterCount").textContent=later.length?`(${later.length})`:"";fillHome("homeLater",later,"Rien de prévu plus tard.");
+ if(bucket==='today')return getAgendaItems().filter(i=>i.date===todayISO());
+ return open.filter(t=>bucket==='todo'||(bucket==='urgent'&&t.priority==='urgent')||(bucket==='late'&&late(t))).sort(smartSort);
+}
+function openHomeBucket(bucket){
+ const title={todo:'À faire',urgent:'Urgent',late:'En retard',today:'Aujourd’hui'}[bucket];
+ const items=homeBucketItems(bucket);
+ $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>${title} · ${items.length}</h3><button class="close" onclick="closeModal()">×</button></div><div class="sectionCard">${items.length?items.map(bucket==='today'?agendaCompactHTML:homeCompactHTML).join(''):'<div class="empty">Rien à afficher.</div>'}</div></div></div>`;
+}
+function renderHome(){
+ $("homeDate").textContent=fmtLong();
+ for(const [key,id] of Object.entries({todo:'homeTodo',urgent:'homeUrgent',late:'homeLate',today:'homeToday'}))$(id).textContent=homeBucketItems(key).length;
+ $("homeReminderCount").textContent=dueReminders().length;
 }
 
 
@@ -873,7 +935,8 @@ function renderFilters(){
 function renderAllTasks(){
  let arr=[...state.tasks],fc=$("filterCategory").value,fs=$("filterStatus").value,sm=$("sortMode").value;
  if(fc!=="Toutes catégories")arr=arr.filter(t=>t.category===fc);
- if(fs!=="Tous")arr=arr.filter(t=>t.status===fs);
+ if(fs==="Actives")arr=arr.filter(t=>!done(t));
+ else if(fs!=="Tous")arr=arr.filter(t=>t.status===fs);
  if(sm==="smart")arr.sort(smartSort);
  else if(sm==="date")arr.sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999"));
  else if(sm==="priority")arr.sort((a,b)=>prioRank(a.priority)-prioRank(b.priority));
@@ -941,7 +1004,8 @@ function getAgendaItems(){
  for(const c of state.calendars){
    if(c.enabled===false)continue;
    for(const e of (c.events||[])){
-     eventItems.push({kind:"event",date:e.date,start:e.start||"",end:e.end||"",title:e.title||"Événement",source:c.name,color:c.color||"#64748b",location:e.location||""});
+     if(e.cancelled)continue;
+     eventItems.push({calendarId:c.id,uid:e.uid||"",recurrenceId:e.recurrenceId||"",kind:"event",date:e.date,start:e.start||"",end:e.end||"",title:e.title||"Événement",source:c.name,color:c.color||"#64748b",location:e.location||""});
    }
  }
  return [...taskItems,...eventItems].filter(x=>x.date&&!isCalendarEventHidden(x)).sort((a,b)=>a.date.localeCompare(b.date)||(a.start||"").localeCompare(b.start||""));
@@ -952,7 +1016,7 @@ function agendaCompactHTML(i){
  return `<div class="agendaCompactItem highlightable" data-event-key="${esc(eventKey(i))}" style="background:${bg}" onclick='if(this.dataset.longPressed!=="1")openAgendaItem(${JSON.stringify(eventKey(i))})'>
    <div class="agendaCompactRow ${i.kind==="event"?"withHide":""}">
      <div class="agendaCompactBar" style="background:${bar}"></div>
-     <div><div class="agendaCompactTitle">${i.kind==="task"?icon(i.task)+" ":""}${esc(i.title)}</div><div class="agendaCompactMeta">${meta}</div></div>
+     <div><div class="agendaCompactTitle">${i.kind==="task"?icon(i.task)+" ":""}${esc(i.title)}${state.reminders[reminderKey(i)]&&state.reminders[reminderKey(i)].mode!=="none"?" 🔔":""}</div><div class="agendaCompactMeta">${meta}</div></div>
      ${i.kind==="event"?`<button class="agendaHideBtn" title="Masquer dans Coordo" onclick='event.stopPropagation();if(confirm("Masquer cet événement uniquement dans Coordo ?"))hideCalendarEvent(${JSON.stringify(eventKey(i))})'>👁</button>`:""}
      <div class="agendaCompactChevron">›</div>
    </div>
@@ -972,6 +1036,7 @@ function openAgendaItem(key){
        <div class="when" style="font-size:15px">${fmtDate(i.date)}${i.start?` · ${i.start}${i.end?`–${i.end}`:""}`:" · Jour entier"}</div>
      </div></div>
      ${i.location?`<div class="agendaDetailInfo"><b>Lieu</b><br>${esc(i.location)}</div>`:""}
+     <button class="btn soft" style="width:100%;margin-top:14px" onclick='openReminderEditor(${JSON.stringify(reminderKey(i))})'>🔔 ${state.reminders[reminderKey(i)]&&state.reminders[reminderKey(i)].mode!=="none"?"Modifier le rappel Coordo":"Ajouter un rappel Coordo"}</button>
      <button class="btn soft" style="width:100%;margin-top:14px" onclick='closeModal();openHighlightPalette(${JSON.stringify(eventKey(i))})'>🎨 Surligner / changer la couleur</button>
      <button class="btn soft" style="width:100%;margin-top:8px" onclick='if(confirm("Masquer cet événement uniquement dans Coordo ?"))hideCalendarEvent(${JSON.stringify(eventKey(i))})'>👁️ Masquer dans Coordo</button>
    </div>
@@ -1085,7 +1150,7 @@ function allExternalAgendaItemsIncludingHidden(){
  const out=[];
  for(const c of state.calendars){
    for(const e of (c.events||[])){
-     out.push({kind:"event",date:e.date,start:e.start||"",end:e.end||"",title:e.title||"Événement",source:c.name,color:c.color||"#64748b",location:e.location||""});
+     out.push({calendarId:c.id,uid:e.uid||"",recurrenceId:e.recurrenceId||"",cancelled:!!e.cancelled,kind:"event",date:e.date,start:e.start||"",end:e.end||"",title:e.title||"Événement",source:c.name,color:c.color||"#64748b",location:e.location||""});
    }
  }
  return out;
@@ -1178,7 +1243,7 @@ function saveCalendar(index){
  if(!url)return alert("Ajoute l’URL .ics.");
  if(!/^https:\/\//i.test(url)&&!/^webcal:\/\//i.test(url))return alert("Utilise une URL HTTPS ou webcal.");
  const cleanUrl=url.replace(/^webcal:/i,"https:");
- const item=index===null?{name,url:cleanUrl,color,enabled:true,events:[],lastSync:null}:{...state.calendars[index],name,url:cleanUrl,color};
+ const item=index===null?{id:String(Date.now()+Math.random()),name,url:cleanUrl,color,enabled:true,events:[],lastSync:null}:{...state.calendars[index],name,url:cleanUrl,color};
  if(index===null)state.calendars.push(item);else state.calendars[index]=item;
  closeModal();save();renderCalendarSources();syncCalendars();
 }
@@ -1200,13 +1265,14 @@ async function syncCalendars(){
      c.lastSync=new Date().toISOString();ok++;
    }catch(e){fail++}
  }
- save();renderAgenda();
+ save();renderAgenda();renderHome();checkOpeningReminders();
  info.textContent=fail?`Synchronisation terminée : ${ok} calendrier(s) OK, ${fail} en erreur.`:`Synchronisation terminée : ${ok} calendrier(s) à jour.`;
 }
 function exportBackup(){
  const safe={
    version:1,
    exportedAt:new Date().toISOString(),
+   reminders:state.reminders,customFieldLabel:state.customFieldLabel,
    tasks:state.tasks,
    categories:state.categories,
    highlightColors:state.highlightColors,
@@ -1218,7 +1284,7 @@ function exportBackup(){
    selectedGroupIds:state.selectedGroupIds,
    mailMode:state.mailMode,
    teamTone:state.teamTone,
-   calendars:state.calendars.map(c=>({name:c.name,color:c.color,enabled:c.enabled!==false,url:null}))
+   calendars:state.calendars.map(c=>({id:c.id,name:c.name,color:c.color,enabled:c.enabled!==false,url:null}))
  };
  const a=document.createElement("a");
  a.href=URL.createObjectURL(new Blob([JSON.stringify(safe,null,2)],{type:"application/json"}));
@@ -1232,6 +1298,8 @@ function restoreBackup(e){
    try{
      const d=JSON.parse(r.result);
      if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;
+     state.reminders=d.reminders||{};
+     state.customFieldLabel=d.customFieldLabel||"Champ personnalisé";
      state.tasks=d.tasks;
      state.categories=d.categories;
      if(Array.isArray(d.highlightColors))state.highlightColors=d.highlightColors;
@@ -1245,7 +1313,7 @@ function restoreBackup(e){
      if(d.teamTone)state.teamTone=d.teamTone;
      const previousUrls=new Map(state.calendars.map(c=>[c.name,c.url]));
      state.calendars=Array.isArray(d.calendars)?d.calendars.map(c=>({
-       name:c.name,color:c.color||"#64748b",enabled:c.enabled!==false,
+       id:c.id||String(Date.now()+Math.random()),name:c.name,color:c.color||"#64748b",enabled:c.enabled!==false,
        url:previousUrls.get(c.name)||"",events:[],lastSync:null
      })):[];
      save();renderAll();alert("Sauvegarde restaurée. Les URL de calendriers privées ne sont pas contenues dans le fichier : réajoute-les si nécessaire.");
@@ -1272,6 +1340,7 @@ function postponeTask(id){
 }
 
 function openTaskModal(date="",task=null){
+ if(!task)editingId=null;
  const t=task||{title:"",category:"Coordo",type:"Autre",status:"À faire",priority:"normale",date:date||todayISO(),allDay:false,startTime:"",endTime:"",notes:"",quick:false,reminder:"none",calendarExported:false};
  $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal">
    <div class="modalHeader"><h3>${task?"Modifier la tâche":"Nouvelle tâche"}</h3><button class="close" onclick="closeModal()">×</button></div>
@@ -1281,7 +1350,8 @@ function openTaskModal(date="",task=null){
     <div class="field"><label>Catégorie</label><select id="mCategory" onchange="updatePreview()">${state.categories.map(c=>`<option ${c.name===t.category?"selected":""}>${esc(c.name)}</option>`).join("")}</select></div>
     <div class="field"><label>Priorité</label><select id="mPriority" onchange="updatePreview()"><option value="urgent" ${t.priority==="urgent"?"selected":""}>🟠 URGENT</option><option value="haute" ${t.priority==="haute"?"selected":""}>🟡 Haute</option><option value="normale" ${t.priority==="normale"?"selected":""}>🔵 Normale</option><option value="basse" ${t.priority==="basse"?"selected":""}>🟢 Basse</option></select></div>
     <div class="field"><label>Type</label><select id="mType">${["Mail","Appel","Réunion","Document","Relance","Idée","Autre"].map(x=>`<option ${x===t.type?"selected":""}>${x}</option>`).join("")}</select></div>
-    <div class="field"><label>Statut</label><select id="mStatus">${["À faire","En cours","En attente","Terminé"].map(x=>`<option ${x===t.status?"selected":""}>${x}</option>`).join("")}</select></div>
+    <div class="field"><label>${esc(state.customFieldLabel)}</label><input id="mCustom" value="${esc(t.customField||'')}" placeholder="Ex. classe, projet, personne…"><button type="button" class="btn soft" style="margin-top:5px;font-size:11px" onclick="renameCustomField()">Renommer ce champ</button></div>
+    <details class="field"><summary>Options de suivi</summary><label>Statut (facultatif)</label><select id="mStatus">${["À faire","En cours","En attente","Terminé"].map(x=>`<option ${x===t.status?"selected":""}>${x}</option>`).join("")}</select></details>
     <div class="field"><label>Date</label><input id="mDate" type="date" value="${t.date||""}" onchange="checkConflict()"></div>
     <div class="field"><label><input id="mAllDay" type="checkbox" style="width:auto;min-height:0" ${t.allDay?"checked":""} onchange="toggleTime();checkConflict()"> Toute la journée</label></div>
     <div class="field"><label>Heure début</label><input id="mStart" type="time" value="${t.startTime||""}" oninput="checkConflict()" onchange="checkConflict()"></div>
@@ -1355,12 +1425,15 @@ function saveTask(){
    const s=timeMin($("mStart").value),e=timeMin($("mEnd").value);
    if(s!==null&&e!==null&&e<=s)return alert("L’heure de fin doit être après l’heure de début.");
  }
- const data={id:editingId||String(Date.now()+Math.random()),title,category:$("mCategory").value,type:$("mType").value,status:$("mStatus").value,priority:$("mPriority").value,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mAllDay").checked?"":$("mStart").value,endTime:$("mAllDay").checked?"":$("mEnd").value,notes:$("mNotes").value.trim(),quick:$("mQuick").checked,reminder:$("mReminder").value,calendarExported:editingId?(state.tasks.find(t=>t.id===editingId)?.calendarExported||false):false,createdAt:editingId?(state.tasks.find(t=>t.id===editingId)?.createdAt||Date.now()):Date.now()};
+ const data={id:editingId||String(Date.now()+Math.random()),title,category:$("mCategory").value,type:$("mType").value,status:$("mStatus").value,priority:$("mPriority").value,date:$("mDate").value,allDay:$("mAllDay").checked,startTime:$("mAllDay").checked?"":$("mStart").value,endTime:$("mAllDay").checked?"":$("mEnd").value,customField:$("mCustom").value.trim(),notes:$("mNotes").value.trim(),quick:$("mQuick").checked,reminder:$("mReminder").value,calendarExported:editingId?(state.tasks.find(t=>t.id===editingId)?.calendarExported||false):false,createdAt:editingId?(state.tasks.find(t=>t.id===editingId)?.createdAt||Date.now()):Date.now()};
  const cf=externalCalendarConflicts(data,editingId);
  if(cf.length&&!confirm("⚠️ Conflit d’horaire avec :\n\n"+cf.map(i=>`${i.title} (${i.start||"?"}–${i.end||"?"}) · ${i.source||""}`).join("\n")+"\n\nAjouter quand même ?"))return;
  if(editingId)state.tasks=state.tasks.map(t=>t.id===editingId?data:t);else state.tasks.push(data);
  const h=$("mHighlight")?.value||"";
  if(h)state.eventHighlights["task|"+data.id]=h;else delete state.eventHighlights["task|"+data.id];
+ if(data.reminder!=="none" && !state.reminders["task|"+data.id]){
+   state.reminders["task|"+data.id]={key:"task|"+data.id,mode:data.reminder,seenDue:null,snoozedUntil:null};
+ }
  editingId=null;closeModal();renderAll()
  }catch(err){
    console.error(err);
@@ -1820,7 +1893,15 @@ function clearMail(){
 }
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}));a.download=`coordo-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
 function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;state=d;renderAll();alert("Sauvegarde restaurée.")}catch(err){alert("Fichier non valide.")}};r.readAsText(f);e.target.value=""}
+// Keep existing reminders on locally created tasks, including their iPhone export.
+for(const t of state.tasks){
+ const key='task|'+t.id;
+ if(t.reminder&&t.reminder!=='none'&&!state.reminders[key])state.reminders[key]={key,mode:t.reminder,seenDue:null,snoozedUntil:null};
+}
 renderContacts();renderMailGroups();renderAll();initMailModeUI();showPage("home",document.querySelector('[data-page="home"]'));
+setTimeout(checkOpeningReminders,100);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkOpeningReminders()});
+window.addEventListener('focus',checkOpeningReminders);
 </script>
 </body>
 </html>
