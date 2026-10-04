@@ -474,10 +474,13 @@ textarea{resize:vertical;min-height:120px}
 .homeTiles .stat{min-height:112px;padding:12px 16px}
 .homeTiles .stat b{font-size:28px;margin-top:3px}
 .homeTiles{margin-top:14px}
+.archiveFolderCard{border:1px solid rgba(0,0,0,.08);border-radius:16px;padding:18px;text-align:left;color:var(--text);min-height:100px;box-shadow:var(--shadow)}
+.archiveFolderCard strong{display:block;font-size:18px;overflow-wrap:anywhere}.archiveFolderCard span{display:block;font-size:12px;margin-top:10px;color:#526078}
+.archiveBreadcrumb{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.19</div>
+<div class="versionTag">V10.20</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -508,6 +511,7 @@ textarea{resize:vertical;min-height:120px}
       <button class="stat" onclick="openHomeBucket('today')"><span class="tileIcon">▣</span><b id="homeToday">0</b><span>Aujourd’hui</span><small>Tâches et événements ›</small></button>
     </div>
     <button class="btn homeReminderButton" onclick="openDueReminders()">🔔 Rappels à consulter <b id="homeReminderCount">0</b><span>›</span></button>
+    <button class="btn homeReminderButton" onclick="openNotesArchive()">🗂️ Notes archivées <b id="homeArchiveCount">0</b><span>›</span></button>
     <div class="sectionHead"><h2 id="homeTasksTitle" style="margin:0;font-size:20px">À faire</h2><select id="homeCompletion" aria-label="Tâches à afficher" onchange="renderHome()" style="width:auto;font-size:12px"><option value="active">Actives</option><option value="done">Terminées</option></select></div>
     <div class="sectionCard" id="homeTasksList"></div>
   </section>
@@ -665,7 +669,9 @@ if(!state.reminders||typeof state.reminders!=="object"||Array.isArray(state.remi
 if(!state.customFieldLabel)state.customFieldLabel="Champ personnalisé";
 state.calendars.forEach(c=>{if(!c.id)c.id=String(Date.now()+Math.random())});
 if(!Array.isArray(state.postits))state.postits=[];
+if(!Array.isArray(state.noteFolders))state.noteFolders=[];
 let postitsArchived=false;
+let archiveColor=null,archiveFolderId=null;
 let homeBucket='todo';
 let editingId=null;
 let agendaView='list';
@@ -910,6 +916,7 @@ function renderHome(){
  $("homeDate").textContent=fmtLong();
  for(const [key,id] of Object.entries({todo:'homeTodo',urgent:'homeUrgent',late:'homeLate',today:'homeToday'}))$(id).textContent=homeBucketItems(key).length;
  $("homeReminderCount").textContent=dueReminders().length;
+ $("homeArchiveCount").textContent=state.postits.filter(n=>n.archived).length;
  const completed=$("homeCompletion").value==='done';
  const items=completed?state.tasks.filter(done).sort(smartSort):homeBucketItems(homeBucket);
  const title=completed?'Terminées':{todo:'À faire',urgent:'Urgent',late:'En retard',today:'Aujourd’hui'}[homeBucket];
@@ -917,13 +924,62 @@ function renderHome(){
  $("homeTasksList").innerHTML=items.length?items.map(!completed&&homeBucket==='today'?agendaCompactHTML:homeTaskHTML).join(''):'<div class="empty">Aucune tâche ni événement à afficher.</div>';
  document.querySelectorAll('.homeTiles .stat').forEach((el,index)=>{const selected=!completed&&['todo','urgent','late','today'][index]===homeBucket;el.classList.toggle('selected',selected);el.setAttribute('aria-pressed',String(selected))});
 }
-function setPostitView(archived){postitsArchived=archived;renderPostits()}
+function setPostitView(archived){postitsArchived=archived;archiveColor=null;archiveFolderId=null;renderPostits()}
+function openNotesArchive(){postitsArchived=true;archiveColor=null;archiveFolderId=null;showPage('postits');renderPostits()}
+function archiveId(){return String(Date.now()+Math.random())}
+function noteColorLabel(color){return ['Jaunes','Roses','Bleues','Vertes','Violettes'][POSTIT_COLORS.indexOf(color)]||'Jaunes'}
+function ensureNoteFolder(color,name='Sans dossier'){
+ const existing=state.noteFolders.find(f=>f.color===color&&f.name.toLocaleLowerCase('fr')===name.toLocaleLowerCase('fr'));
+ if(existing)return existing;
+ const folder={id:archiveId(),color,name};state.noteFolders.push(folder);return folder;
+}
+function normalizeNoteFolders(){
+ if(!Array.isArray(state.noteFolders))state.noteFolders=[];
+ let changed=false;
+ for(const n of state.postits.filter(n=>n.archived)){
+  if(!POSTIT_COLORS.includes(n.color)){n.color=POSTIT_COLORS[0];changed=true}
+  const folder=state.noteFolders.find(f=>f.id===n.folderId&&f.color===n.color);
+  if(!folder){n.folderId=ensureNoteFolder(n.color).id;changed=true}
+ }
+ if(changed)save();
+}
+function postitCardHTML(n){
+ return '<article class="postit" style="background:'+n.color+'"><button class="postitBody" onclick=\''+'openPostitEditor('+JSON.stringify(n.id)+')'+'\'><strong>'+esc(n.title||'Sans titre')+'</strong><div>'+esc(n.body)+'</div><small>'+new Date(n.updatedAt).toLocaleDateString('fr-FR')+'</small></button><div class="actions">'+(n.archived?'<button onclick=\''+'openArchivePostit('+JSON.stringify(n.id)+')'+'\'>Déplacer</button>':'')+'<button onclick=\''+'archivePostit('+JSON.stringify(n.id)+','+!n.archived+')'+'\'>'+(n.archived?'Restaurer':'Archiver')+'</button><button onclick=\''+'deletePostit('+JSON.stringify(n.id)+')'+'\'>Supprimer</button></div></article>';
+}
+function selectArchiveColor(color){archiveColor=color;archiveFolderId=null;renderPostits()}
+function selectArchiveFolder(id){archiveFolderId=id;renderPostits()}
 function renderPostits(){
- if(!$("postitList"))return;
+ if(!$("postitList"))return;normalizeNoteFolders();
  $("postitsActive").classList.toggle('activeView',!postitsArchived);
  $("postitsArchived").classList.toggle('activeView',postitsArchived);
- const notes=state.postits.filter(n=>!!n.archived===postitsArchived).sort((a,b)=>b.updatedAt-a.updatedAt);
- $("postitList").innerHTML=notes.length?notes.map(n=>`<article class="postit" style="background:${POSTIT_COLORS.includes(n.color)?n.color:POSTIT_COLORS[0]}"><button class="postitBody" onclick='openPostitEditor(${JSON.stringify(n.id)})'><strong>${esc(n.title||'Sans titre')}</strong><div>${esc(n.body)}</div><small>${new Date(n.updatedAt).toLocaleDateString('fr-FR')}</small></button><div class="actions"><button onclick='archivePostit(${JSON.stringify(n.id)},${!n.archived})'>${n.archived?'Restaurer':'Archiver'}</button><button onclick='deletePostit(${JSON.stringify(n.id)})'>Supprimer</button></div></article>`).join(''):`<div class="empty">${postitsArchived?'Aucun post-it archivé.':'Ajoute ton premier post-it avec « + Post-it ».'}</div>`;
+ const root=$("postitList");
+ if(!postitsArchived){
+  const notes=state.postits.filter(n=>!n.archived).sort((a,b)=>b.updatedAt-a.updatedAt);
+  root.innerHTML=notes.length?notes.map(postitCardHTML).join(''):'<div class="empty">Ajoute ton premier post-it avec « + Post-it ».</div>';return;
+ }
+ const archived=state.postits.filter(n=>n.archived);
+ if(!archiveColor){
+  root.innerHTML=POSTIT_COLORS.map(color=>'<button class="archiveFolderCard" style="background:'+color+'" onclick=\''+'selectArchiveColor('+JSON.stringify(color)+')'+'\'><strong>Notes '+noteColorLabel(color).toLowerCase()+'</strong><span>'+archived.filter(n=>n.color===color).length+' note(s) · '+state.noteFolders.filter(f=>f.color===color).length+' dossier(s) ›</span></button>').join('');return;
+ }
+ const folder=state.noteFolders.find(f=>f.id===archiveFolderId&&f.color===archiveColor);
+ const heading='<div class="archiveBreadcrumb"><button class="btn soft" onclick="setPostitView(true)">Toutes les couleurs</button><button class="btn soft" onclick=\''+'selectArchiveColor('+JSON.stringify(archiveColor)+')'+'\'>Notes '+noteColorLabel(archiveColor).toLowerCase()+'</button>'+(folder?'<strong>'+esc(folder.name)+'</strong><button class="btn soft" onclick=\''+'renameNoteFolder('+JSON.stringify(folder.id)+')'+'\'>Renommer le dossier</button>':'')+'</div>';
+ if(folder){
+  const notes=archived.filter(n=>n.folderId===folder.id).sort((a,b)=>b.updatedAt-a.updatedAt);
+  root.innerHTML=heading+(notes.length?notes.map(postitCardHTML).join(''):'<div class="empty">Ce dossier est vide.</div>');return;
+ }
+ const folders=state.noteFolders.filter(f=>f.color===archiveColor);
+ root.innerHTML=heading+'<button class="btn primary" onclick=\''+'createNoteFolder('+JSON.stringify(archiveColor)+')'+'\'>+ Nouveau dossier</button>'+folders.map(f=>'<button class="archiveFolderCard" style="background:'+f.color+'" onclick=\''+'selectArchiveFolder('+JSON.stringify(f.id)+')'+'\'><strong>📁 '+esc(f.name)+'</strong><span>'+archived.filter(n=>n.folderId===f.id).length+' note(s) ›</span></button>').join('');
+}
+function createNoteFolder(color){
+ const name=prompt('Nom du nouveau dossier');if(!name||!name.trim())return;
+ const folder=ensureNoteFolder(color,name.trim().slice(0,80));save();selectArchiveFolder(folder.id);
+}
+function renameNoteFolder(id){
+ const folder=state.noteFolders.find(f=>f.id===id);if(!folder)return;
+ const name=prompt('Nom du dossier',folder.name);if(!name||!name.trim())return;
+ const clean=name.trim().slice(0,80);
+ if(state.noteFolders.some(f=>f.id!==id&&f.color===folder.color&&f.name.toLocaleLowerCase('fr')===clean.toLocaleLowerCase('fr')))return alert('Un dossier de cette couleur porte déjà ce nom.');
+ folder.name=clean;save();renderPostits();
 }
 const POSTIT_COLORS=['#fff0a8','#ffd3df','#cfe2ff','#cff0d8','#e5d5ff'];
 function openPostitEditor(id=null){
@@ -934,12 +990,43 @@ function openPostitEditor(id=null){
 function savePostit(id){
  const body=$("postitBody").value.trim(),title=$("postitTitle").value.trim();if(!body&&!title)return alert('Écris ou dicte une note.');
  const previous=state.postits.find(n=>n.id===id);
- const note={id:previous?.id||String(Date.now()+Math.random()),title,body,color:$("postitColor").value,archived:previous?.archived||false,createdAt:previous?.createdAt||Date.now(),updatedAt:Date.now()};
+ const note={...previous,id:previous?.id||String(Date.now()+Math.random()),title,body,color:$("postitColor").value,archived:previous?.archived||false,createdAt:previous?.createdAt||Date.now(),updatedAt:Date.now()};
  if(previous)state.postits=state.postits.map(n=>n.id===id?note:n);else state.postits.push(note);
- save();closeModal();renderPostits();
+ save();closeModal();renderPostits();renderHome();
 }
-function archivePostit(id,archived){const note=state.postits.find(n=>n.id===id);if(!note)return;note.archived=archived;save();renderPostits()}
-function deletePostit(id){if(!confirm('Supprimer définitivement ce post-it ?'))return;state.postits=state.postits.filter(n=>n.id!==id);save();renderPostits()}
+function archivePostit(id,archived){
+ const note=state.postits.find(n=>n.id===id);if(!note)return;
+ if(archived){openArchivePostit(id);return}
+ note.archived=false;delete note.folderId;save();renderPostits();renderHome();
+}
+function openArchivePostit(id){
+ const note=state.postits.find(n=>n.id===id);if(!note)return;
+ normalizeNoteFolders();
+ $("modalRoot").innerHTML='<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>'+(note.archived?'Classer la note':'Archiver la note')+'</h3><button class="close" onclick="closeModal()">×</button></div><div class="field"><label>Titre de la note archivée</label><input id="archiveNoteTitle" maxlength="140" value="'+esc(note.title||note.body?.split('\n')[0]?.slice(0,100)||'')+'"></div><div class="field"><label>Couleur</label><select id="archiveNoteColor" onchange="renderArchiveFolderChoice()">'+POSTIT_COLORS.map(color=>'<option value="'+color+'" '+(color===note.color?'selected':'')+'>Notes '+noteColorLabel(color).toLowerCase()+'</option>').join('')+'</select></div><div class="field"><label>Dossier</label><select id="archiveNoteFolder" onchange="toggleNewArchiveFolder()"></select></div><div id="newArchiveFolderField" class="field"><label>Nom du nouveau dossier</label><input id="newArchiveFolderName" maxlength="80" placeholder="Ex. Réunions EPS"></div><div class="modalFooter"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick="'+esc('saveArchivePostit('+JSON.stringify(id)+')')+'">'+(note.archived?'Enregistrer':'Archiver')+'</button></div></div></div>';
+ renderArchiveFolderChoice(note.folderId);
+}
+function renderArchiveFolderChoice(preferred=null){
+ const color=$("archiveNoteColor").value;
+ const folders=state.noteFolders.filter(f=>f.color===color);
+ $("archiveNoteFolder").innerHTML=folders.map(f=>'<option value="'+esc(f.id)+'">'+esc(f.name)+'</option>').join('')+'<option value="__new__">+ Nouveau dossier</option>';
+ if(preferred&&folders.some(f=>f.id===preferred))$("archiveNoteFolder").value=preferred;
+ toggleNewArchiveFolder();
+}
+function toggleNewArchiveFolder(){$("newArchiveFolderField").classList.toggle('hidden',$("archiveNoteFolder").value!=='__new__')}
+function saveArchivePostit(id){
+ const note=state.postits.find(n=>n.id===id);if(!note)return;
+ const title=$("archiveNoteTitle").value.trim(),color=$("archiveNoteColor").value,selection=$("archiveNoteFolder").value;
+ if(!title)return alert('Ajoute un titre à la note.');
+ let folder;
+ if(selection==='__new__'){
+  const name=$("newArchiveFolderName").value.trim();if(!name)return alert('Donne un nom au nouveau dossier.');
+  folder=ensureNoteFolder(color,name.slice(0,80));
+ }else folder=state.noteFolders.find(f=>f.id===selection&&f.color===color);
+ if(!folder)return alert('Choisis un dossier.');
+ note.title=title.slice(0,140);note.color=color;note.folderId=folder.id;note.archived=true;note.updatedAt=Date.now();
+ save();closeModal();renderPostits();renderHome();
+}
+function deletePostit(id){if(!confirm('Supprimer définitivement ce post-it ?'))return;state.postits=state.postits.filter(n=>n.id!==id);save();renderPostits();renderHome()}
 
 
 function compactTaskHTML(t){
@@ -1312,7 +1399,7 @@ function exportBackup(){
  const safe={
    version:1,
    exportedAt:new Date().toISOString(),
-   reminders:state.reminders,customFieldLabel:state.customFieldLabel,postits:state.postits,
+   reminders:state.reminders,customFieldLabel:state.customFieldLabel,postits:state.postits,noteFolders:state.noteFolders,
    tasks:state.tasks,
    categories:state.categories,
    highlightColors:state.highlightColors,
@@ -1339,6 +1426,7 @@ function restoreBackup(e){
      const d=JSON.parse(r.result);
      if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;
      state.postits=Array.isArray(d.postits)?d.postits:state.postits;
+     state.noteFolders=Array.isArray(d.noteFolders)?d.noteFolders:[];
      state.reminders=d.reminders||{};
      state.customFieldLabel=d.customFieldLabel||"Champ personnalisé";
      state.tasks=d.tasks;
@@ -1933,7 +2021,7 @@ function clearMail(){
  state.selectedContactIds=[];state.selectedGroupIds=[];save();renderContacts();renderMailGroups();$("mailInfo").textContent=""
 }
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}));a.download=`coordo-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
-function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;state=d;if(!Array.isArray(state.postits))state.postits=[];if(!state.reminders)state.reminders={};renderAll();alert("Sauvegarde restaurée.")}catch(err){alert("Fichier non valide.")}};r.readAsText(f);e.target.value=""}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;state=d;if(!Array.isArray(state.postits))state.postits=[];if(!Array.isArray(state.noteFolders))state.noteFolders=[];if(!state.reminders)state.reminders={};renderAll();alert("Sauvegarde restaurée.")}catch(err){alert("Fichier non valide.")}};r.readAsText(f);e.target.value=""}
 // Keep existing reminders on locally created tasks, including their iPhone export.
 for(const t of state.tasks){
  const key='task|'+t.id;
