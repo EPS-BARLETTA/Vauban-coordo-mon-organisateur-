@@ -486,7 +486,7 @@ textarea{resize:vertical;min-height:120px}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.22</div>
+<div class="versionTag">V10.23</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
@@ -514,7 +514,7 @@ textarea{resize:vertical;min-height:120px}
       <button class="stat" onclick="openHomeBucket('todo')"><span class="tileIcon">✓</span><b id="homeTodo">0</b><span>À faire</span><small>Voir les tâches ›</small></button>
       <button class="stat" onclick="openHomeBucket('urgent')"><span class="tileIcon">⚡</span><b id="homeUrgent">0</b><span>Urgent</span><small>Voir les tâches ›</small></button>
       <button class="stat" onclick="openHomeBucket('late')"><span class="tileIcon">◷</span><b id="homeLate">0</b><span>En retard</span><small>Voir les tâches ›</small></button>
-      <button class="stat" onclick="openHomeBucket('today')"><span class="tileIcon">▣</span><b id="homeToday">0</b><span>Aujourd’hui</span><small>Tâches et événements ›</small></button>
+      <button class="stat" onclick="openHomeNotes()"><span class="tileIcon">✎</span><b id="homeNotes">0</b><span>Notes</span><small>Post-it et archives ›</small></button>
     </div>
     <button class="btn homeReminderButton" onclick="openDueReminders()">🔔 Rappels à consulter <b id="homeReminderCount">0</b><span>›</span></button>
     <button class="btn homeReminderButton" onclick="openNotesArchive()">🗂️ Notes archivées <b id="homeArchiveCount">0</b><span>›</span></button>
@@ -915,20 +915,22 @@ function homeBucketItems(bucket){
  if(bucket==='today')return getAgendaItems().filter(i=>i.date===todayISO());
  return open.filter(t=>bucket==='todo'||(bucket==='urgent'&&t.priority==='urgent')||(bucket==='late'&&late(t))).sort(smartSort);
 }
+function openHomeNotes(){setPostitView(false);showPage('postits')}
 function openHomeBucket(bucket){
  homeBucket=bucket;$("homeCompletion").value='active';renderHome();
 }
 function renderHome(){
  $("homeDate").textContent=fmtLong();
- for(const [key,id] of Object.entries({todo:'homeTodo',urgent:'homeUrgent',late:'homeLate',today:'homeToday'}))$(id).textContent=homeBucketItems(key).length;
+ for(const [key,id] of Object.entries({todo:'homeTodo',urgent:'homeUrgent',late:'homeLate'}))$(id).textContent=homeBucketItems(key).length;
  $("homeReminderCount").textContent=dueReminders().length;
  $("homeArchiveCount").textContent=state.postits.filter(n=>n.archived).length;
+ $("homeNotes").textContent=state.postits.filter(n=>!n.archived).length;
  const completed=$("homeCompletion").value==='done';
  const items=completed?state.tasks.filter(done).sort(smartSort):homeBucketItems(homeBucket);
  const title=completed?'Terminées':{todo:'À faire',urgent:'Urgent',late:'En retard',today:'Aujourd’hui'}[homeBucket];
  $("homeTasksTitle").textContent=title+' · '+items.length;
  $("homeTasksList").innerHTML=items.length?items.map(!completed&&homeBucket==='today'?agendaCompactHTML:homeTaskHTML).join(''):'<div class="empty">Aucune tâche ni événement à afficher.</div>';
- document.querySelectorAll('.homeTiles .stat').forEach((el,index)=>{const selected=!completed&&['todo','urgent','late','today'][index]===homeBucket;el.classList.toggle('selected',selected);el.setAttribute('aria-pressed',String(selected))});
+ document.querySelectorAll('.homeTiles .stat').forEach((el,index)=>{const selected=!completed&&['todo','urgent','late'][index]===homeBucket;el.classList.toggle('selected',selected);el.setAttribute('aria-pressed',String(selected))});
 }
 function setPostitView(archived){postitsArchived=archived;archiveColor=null;archiveFolderId=null;renderPostits()}
 function openNotesArchive(){postitsArchived=true;archiveColor=null;archiveFolderId=null;showPage('postits');renderPostits()}
