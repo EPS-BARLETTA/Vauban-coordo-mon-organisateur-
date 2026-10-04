@@ -463,18 +463,29 @@ textarea{resize:vertical;min-height:120px}
 .reminderItem:first-child{border-top:0}
 .reminderItem .actions{margin-top:8px}
 @media(min-width:850px){.homeTiles{max-width:720px}.homeReminderButton{max-width:720px}}
+.homeTiles .stat.selected{outline:2px solid var(--blue);outline-offset:2px}
+.postitGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.postit{border:1px solid rgba(0,0,0,.06);border-radius:8px 8px 24px 8px;padding:16px;box-shadow:0 7px 18px rgba(21,35,55,.08)}
+.postitBody{display:block;border:0;background:transparent;text-align:left;width:100%;padding:0;color:var(--text)}
+.postitBody strong{display:block;font-size:18px;margin-bottom:9px}
+.postitBody div{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5;max-height:250px;overflow:auto}
+.postitBody small{display:block;color:var(--muted);margin-top:12px}
+.postit .actions button{background:rgba(255,255,255,.65)}
+.homeTiles .stat{min-height:112px;padding:12px 16px}
+.homeTiles .stat b{font-size:28px;margin-top:3px}
+.homeTiles{margin-top:14px}
 </style>
 </head>
 <body>
-<div class="versionTag">V10.17</div>
+<div class="versionTag">V10.19</div>
 <div class="app">
 <aside class="sidebar">
   <div class="sidebrand">Coordo<small>Organiseur personnel</small></div>
   <div class="sidenav">
     <button class="active" data-page="home" onclick="showPage('home',this)">Accueil</button>
-    <button data-page="all" onclick="showPage('all',this)">Tâches</button>
+    <button data-page="postits" onclick="showPage('postits',this)">Bloc-notes</button>
     <button data-page="agenda" onclick="showPage('agenda',this)">Agenda</button>
-    <button data-page="quick" onclick="showPage('quick',this)">Notes</button>
+    <button data-page="quick" onclick="showPage('quick',this)">Notes rapides</button>
     <button data-page="mail" onclick="showPage('mail',this)">Mail</button>
   </div>
   <div class="sidebottom">
@@ -497,17 +508,15 @@ textarea{resize:vertical;min-height:120px}
       <button class="stat" onclick="openHomeBucket('today')"><span class="tileIcon">▣</span><b id="homeToday">0</b><span>Aujourd’hui</span><small>Tâches et événements ›</small></button>
     </div>
     <button class="btn homeReminderButton" onclick="openDueReminders()">🔔 Rappels à consulter <b id="homeReminderCount">0</b><span>›</span></button>
-    <p class="homeHint">Choisis une case pour voir les détails.</p>
+    <div class="sectionHead"><h2 id="homeTasksTitle" style="margin:0;font-size:20px">À faire</h2><select id="homeCompletion" aria-label="Tâches à afficher" onchange="renderHome()" style="width:auto;font-size:12px"><option value="active">Actives</option><option value="done">Terminées</option></select></div>
+    <div class="sectionCard" id="homeTasksList"></div>
   </section>
 
-  <section id="page-all" class="page">
-    <div class="topbar"><div class="hello"><h1>Tâches</h1><div class="date">Tout au même endroit.</div></div><button class="btn primary" onclick="openTaskModal()">+ Ajouter</button></div>
-    <div class="toolbar">
-      <select id="filterCategory" onchange="renderAll()"></select>
-      <select id="filterStatus" onchange="renderAll()"><option value="Actives" selected>À faire</option><option value="Terminé">Terminées</option><option value="Tous">Toutes les tâches</option></select>
-      <select id="sortMode" onchange="renderAll()"><option value="smart">Priorité intelligente</option><option value="date">Par date</option><option value="priority">Par priorité</option><option value="category">Par catégorie</option></select>
-    </div>
-    <div class="sectionCard" id="allList"></div>
+  <div class="hidden" aria-hidden="true"><select id="filterCategory"></select><select id="filterStatus"><option value="Actives">Actives</option></select><select id="sortMode"><option value="smart">smart</option></select><div id="allList"></div></div>
+  <section id="page-postits" class="page">
+    <div class="topbar"><div class="hello"><h1>Bloc-notes</h1><div class="date">Tes idées et mémos en post-it.</div></div><button class="btn primary" onclick="openPostitEditor()">+ Post-it</button></div>
+    <div class="viewSwitch"><button id="postitsActive" class="btn activeView" onclick="setPostitView(false)">Mes notes</button><button id="postitsArchived" class="btn" onclick="setPostitView(true)">Archives</button></div>
+    <div id="postitList" class="postitGrid"></div>
   </section>
 
   
@@ -585,12 +594,12 @@ textarea{resize:vertical;min-height:120px}
 </main>
 </div>
 
-<button class="fab" onclick="openTaskModal()">+</button>
+
 <nav class="bottomnav">
   <button class="active" data-page="home" onclick="showPage('home',this)"><span class="ico">⌂</span>Accueil</button>
-  <button data-page="all" onclick="showPage('all',this)"><span class="ico">☑︎</span>Tâches</button>
+  <button data-page="postits" onclick="showPage('postits',this)"><span class="ico">▧</span>Bloc-notes</button>
   <button data-page="agenda" onclick="showPage('agenda',this)"><span class="ico">▤</span>Agenda</button>
-  <button data-page="quick" onclick="showPage('quick',this)"><span class="ico">✎</span>Notes</button>
+  <button data-page="quick" onclick="showPage('quick',this)"><span class="ico">✎</span>Notes rapides rapides</button>
   <button data-page="mail" onclick="showPage('mail',this)"><span class="ico">✉</span>Mail</button>
 </nav>
 
@@ -655,6 +664,9 @@ state.tasks=state.tasks.map(t=>({
 if(!state.reminders||typeof state.reminders!=="object"||Array.isArray(state.reminders))state.reminders={};
 if(!state.customFieldLabel)state.customFieldLabel="Champ personnalisé";
 state.calendars.forEach(c=>{if(!c.id)c.id=String(Date.now()+Math.random())});
+if(!Array.isArray(state.postits))state.postits=[];
+let postitsArchived=false;
+let homeBucket='todo';
 let editingId=null;
 let agendaView='list';
 let agendaMonthDate=new Date();
@@ -664,6 +676,7 @@ function showPage(name,el){
  const page=$("page-"+name);if(page)page.classList.add("active");
  document.querySelectorAll("[data-page]").forEach(x=>x.classList.remove("active"));
  document.querySelectorAll(`[data-page="${name}"]`).forEach(x=>x.classList.add("active"));
+ if(name==="postits")renderPostits();
  if(name==="agenda"){renderAgenda();setAgendaView(agendaView);}
  if(name==="mail"){renderContacts();renderMailGroups();initMailModeUI();}
  window.scrollTo({top:0,behavior:"smooth"});
@@ -891,15 +904,42 @@ function homeBucketItems(bucket){
  return open.filter(t=>bucket==='todo'||(bucket==='urgent'&&t.priority==='urgent')||(bucket==='late'&&late(t))).sort(smartSort);
 }
 function openHomeBucket(bucket){
- const title={todo:'À faire',urgent:'Urgent',late:'En retard',today:'Aujourd’hui'}[bucket];
- const items=homeBucketItems(bucket);
- $("modalRoot").innerHTML=`<div class="modalbg" onclick="if(event.target===this)closeModal()"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>${title} · ${items.length}</h3><button class="close" onclick="closeModal()">×</button></div><div class="sectionCard">${items.length?items.map(bucket==='today'?agendaCompactHTML:homeCompactHTML).join(''):'<div class="empty">Rien à afficher.</div>'}</div></div></div>`;
+ homeBucket=bucket;$("homeCompletion").value='active';renderHome();
 }
 function renderHome(){
  $("homeDate").textContent=fmtLong();
  for(const [key,id] of Object.entries({todo:'homeTodo',urgent:'homeUrgent',late:'homeLate',today:'homeToday'}))$(id).textContent=homeBucketItems(key).length;
  $("homeReminderCount").textContent=dueReminders().length;
+ const completed=$("homeCompletion").value==='done';
+ const items=completed?state.tasks.filter(done).sort(smartSort):homeBucketItems(homeBucket);
+ const title=completed?'Terminées':{todo:'À faire',urgent:'Urgent',late:'En retard',today:'Aujourd’hui'}[homeBucket];
+ $("homeTasksTitle").textContent=title+' · '+items.length;
+ $("homeTasksList").innerHTML=items.length?items.map(!completed&&homeBucket==='today'?agendaCompactHTML:homeTaskHTML).join(''):'<div class="empty">Aucune tâche ni événement à afficher.</div>';
+ document.querySelectorAll('.homeTiles .stat').forEach((el,index)=>{const selected=!completed&&['todo','urgent','late','today'][index]===homeBucket;el.classList.toggle('selected',selected);el.setAttribute('aria-pressed',String(selected))});
 }
+function setPostitView(archived){postitsArchived=archived;renderPostits()}
+function renderPostits(){
+ if(!$("postitList"))return;
+ $("postitsActive").classList.toggle('activeView',!postitsArchived);
+ $("postitsArchived").classList.toggle('activeView',postitsArchived);
+ const notes=state.postits.filter(n=>!!n.archived===postitsArchived).sort((a,b)=>b.updatedAt-a.updatedAt);
+ $("postitList").innerHTML=notes.length?notes.map(n=>`<article class="postit" style="background:${POSTIT_COLORS.includes(n.color)?n.color:POSTIT_COLORS[0]}"><button class="postitBody" onclick='openPostitEditor(${JSON.stringify(n.id)})'><strong>${esc(n.title||'Sans titre')}</strong><div>${esc(n.body)}</div><small>${new Date(n.updatedAt).toLocaleDateString('fr-FR')}</small></button><div class="actions"><button onclick='archivePostit(${JSON.stringify(n.id)},${!n.archived})'>${n.archived?'Restaurer':'Archiver'}</button><button onclick='deletePostit(${JSON.stringify(n.id)})'>Supprimer</button></div></article>`).join(''):`<div class="empty">${postitsArchived?'Aucun post-it archivé.':'Ajoute ton premier post-it avec « + Post-it ».'}</div>`;
+}
+const POSTIT_COLORS=['#fff0a8','#ffd3df','#cfe2ff','#cff0d8','#e5d5ff'];
+function openPostitEditor(id=null){
+ const note=id?state.postits.find(n=>n.id===id):null;if(id&&!note)return;
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>${note?'Modifier le post-it':'Nouveau post-it'}</h3><button class="close" onclick="closeModal()">×</button></div><div class="field"><label>Titre (facultatif)</label><input id="postitTitle" value="${esc(note?.title||'')}"></div><div class="field"><label>Ta note</label><textarea id="postitBody" placeholder="Écris ici ou utilise le micro du clavier…">${esc(note?.body||'')}</textarea></div><p class="secretHint">Pour dicter sur iPhone ou iPad : touche la zone de texte, puis le micro du clavier. Appuie sur Enregistrer pour conserver ta note.</p><div class="field"><label>Couleur</label><select id="postitColor">${POSTIT_COLORS.map((color,index)=>`<option value="${color}" ${note?.color===color?'selected':''}>${['Jaune','Rose','Bleu','Vert','Violet'][index]}</option>`).join('')}</select></div><div class="modalFooter"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick='savePostit(${JSON.stringify(id)})'>Enregistrer</button></div></div></div>`;
+ $("postitBody").focus();
+}
+function savePostit(id){
+ const body=$("postitBody").value.trim(),title=$("postitTitle").value.trim();if(!body&&!title)return alert('Écris ou dicte une note.');
+ const previous=state.postits.find(n=>n.id===id);
+ const note={id:previous?.id||String(Date.now()+Math.random()),title,body,color:$("postitColor").value,archived:previous?.archived||false,createdAt:previous?.createdAt||Date.now(),updatedAt:Date.now()};
+ if(previous)state.postits=state.postits.map(n=>n.id===id?note:n);else state.postits.push(note);
+ save();closeModal();renderPostits();
+}
+function archivePostit(id,archived){const note=state.postits.find(n=>n.id===id);if(!note)return;note.archived=archived;save();renderPostits()}
+function deletePostit(id){if(!confirm('Supprimer définitivement ce post-it ?'))return;state.postits=state.postits.filter(n=>n.id!==id);save();renderPostits()}
 
 
 function compactTaskHTML(t){
@@ -1272,7 +1312,7 @@ function exportBackup(){
  const safe={
    version:1,
    exportedAt:new Date().toISOString(),
-   reminders:state.reminders,customFieldLabel:state.customFieldLabel,
+   reminders:state.reminders,customFieldLabel:state.customFieldLabel,postits:state.postits,
    tasks:state.tasks,
    categories:state.categories,
    highlightColors:state.highlightColors,
@@ -1298,6 +1338,7 @@ function restoreBackup(e){
    try{
      const d=JSON.parse(r.result);
      if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;
+     state.postits=Array.isArray(d.postits)?d.postits:state.postits;
      state.reminders=d.reminders||{};
      state.customFieldLabel=d.customFieldLabel||"Champ personnalisé";
      state.tasks=d.tasks;
@@ -1322,7 +1363,7 @@ function restoreBackup(e){
  r.readAsText(f);e.target.value="";
 }
 
-function renderAll(){renderFilters();renderHome();renderAllTasks();renderQuick();renderAgenda();renderCalendarSources();save();setTimeout(bindLongPress,20)}
+function renderAll(){renderFilters();renderHome();renderPostits();renderAllTasks();renderQuick();renderAgenda();renderCalendarSources();save();setTimeout(bindLongPress,20)}
 
 function toggleDone(id){const t=state.tasks.find(x=>x.id===id);if(t){t.status=done(t)?"À faire":"Terminé";renderAll()}}
 function deleteTask(id){const t=state.tasks.find(x=>x.id===id);if(t&&confirm(`Supprimer « ${t.title} » ?`)){state.tasks=state.tasks.filter(x=>x.id!==id);renderAll()}}
@@ -1892,7 +1933,7 @@ function clearMail(){
  state.selectedContactIds=[];state.selectedGroupIds=[];save();renderContacts();renderMailGroups();$("mailInfo").textContent=""
 }
 function exportData(){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:"application/json"}));a.download=`coordo-${todayISO()}.json`;a.click();URL.revokeObjectURL(a.href)}
-function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;state=d;renderAll();alert("Sauvegarde restaurée.")}catch(err){alert("Fichier non valide.")}};r.readAsText(f);e.target.value=""}
+function importData(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tasks)||!Array.isArray(d.categories))throw 0;state=d;if(!Array.isArray(state.postits))state.postits=[];if(!state.reminders)state.reminders={};renderAll();alert("Sauvegarde restaurée.")}catch(err){alert("Fichier non valide.")}};r.readAsText(f);e.target.value=""}
 // Keep existing reminders on locally created tasks, including their iPhone export.
 for(const t of state.tasks){
  const key='task|'+t.id;
