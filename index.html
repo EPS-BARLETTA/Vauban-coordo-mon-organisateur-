@@ -951,7 +951,7 @@ function normalizeNoteFolders(){
  if(changed)save();
 }
 function postitCardHTML(n){
- return '<article class="postit" style="background:'+n.color+'"><button class="postitBody" onclick=\''+'openPostitEditor('+JSON.stringify(n.id)+')'+'\'><strong>'+esc(n.title||'Sans titre')+'</strong><div>'+esc(n.body)+'</div><small>'+new Date(n.updatedAt).toLocaleDateString('fr-FR')+'</small></button><div class="actions">'+(n.archived?'<button onclick=\''+'openArchivePostit('+JSON.stringify(n.id)+')'+'\'>Déplacer</button>':'')+'<button onclick=\''+'archivePostit('+JSON.stringify(n.id)+','+!n.archived+')'+'\'>'+(n.archived?'Restaurer':'Archiver')+'</button><button onclick=\''+'deletePostit('+JSON.stringify(n.id)+')'+'\'>Supprimer</button></div></article>';
+ return '<article class="postit" style="background:'+n.color+'"><button class="postitBody" onclick=\''+'openPostitEditor('+JSON.stringify(n.id)+')'+'\'><strong>'+esc(n.title||'Sans titre')+'</strong><div>'+esc(n.body)+'</div>'+(n.photo?'<img src="'+n.photo+'" alt="Photo du post-it" style="display:block;width:100%;max-height:220px;object-fit:contain;border-radius:12px;margin-top:10px" loading="lazy">':'')+'<small>'+new Date(n.updatedAt).toLocaleDateString('fr-FR')+'</small></button><div class="actions">'+(n.archived?'<button onclick=\''+'openArchivePostit('+JSON.stringify(n.id)+')'+'\'>Déplacer</button>':'')+'<button onclick=\''+'archivePostit('+JSON.stringify(n.id)+','+!n.archived+')'+'\'>'+(n.archived?'Restaurer':'Archiver')+'</button><button onclick=\''+'deletePostit('+JSON.stringify(n.id)+')'+'\'>Supprimer</button></div></article>';
 }
 function selectArchiveColor(color){archiveColor=color;archiveFolderId=null;renderPostits()}
 function selectArchiveFolder(id){archiveFolderId=id;renderPostits()}
@@ -1044,17 +1044,44 @@ function renameNoteFolder(id){
  folder.name=clean;save();renderPostits();
 }
 const POSTIT_COLORS=['#fff0a8','#ffd3df','#cfe2ff','#cff0d8','#e5d5ff'];
+let postitPhotoDraft='';
+function postitPhotoPreview(){
+ const preview=$("postitPhotoPreview");if(!preview)return;
+ preview.innerHTML=postitPhotoDraft?'<img src="'+postitPhotoDraft+'" alt="Photo jointe" style="width:100%;max-height:200px;object-fit:contain;border-radius:12px"><button type="button" class="btn" style="margin-top:8px" onclick="removePostitPhoto()">Retirer la photo</button>':'';
+}
+function removePostitPhoto(){postitPhotoDraft='';postitPhotoPreview()}
+function loadPostitPhoto(input){
+ const file=input.files&&input.files[0];if(!file)return;
+ if(!file.type.startsWith('image/')){alert('Choisis une image.');return}
+ const reader=new FileReader();
+ reader.onerror=()=>alert('Impossible de lire cette photo.');
+ reader.onload=()=>{
+  const image=new Image();
+  image.onerror=()=>alert('Cette image ne peut pas être ouverte.');
+  image.onload=()=>{
+   const scale=Math.min(1,1200/Math.max(image.width,image.height));
+   const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));
+   canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+   postitPhotoDraft=canvas.toDataURL('image/jpeg',0.68);postitPhotoPreview();
+  };
+  image.src=reader.result;
+ };
+ reader.readAsDataURL(file);
+}
 function openPostitEditor(id=null){
  const note=id?state.postits.find(n=>n.id===id):null;if(id&&!note)return;
- $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>${note?'Modifier le post-it':'Nouveau post-it'}</h3><button class="close" onclick="closeModal()">×</button></div><div class="field"><label>Titre (facultatif)</label><input id="postitTitle" value="${esc(note?.title||'')}"></div><div class="field"><label>Ta note</label><textarea id="postitBody" placeholder="Écris ici ou utilise le micro du clavier…">${esc(note?.body||'')}</textarea></div><p class="secretHint">Pour dicter sur iPhone ou iPad : touche la zone de texte, puis le micro du clavier. Appuie sur Enregistrer pour conserver ta note.</p><div class="field"><label>Couleur</label><select id="postitColor">${POSTIT_COLORS.map((color,index)=>`<option value="${color}" ${note?.color===color?'selected':''}>${['Jaune','Rose','Bleu','Vert','Violet'][index]}</option>`).join('')}</select></div><div class="modalFooter"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick='savePostit(${JSON.stringify(id)})'>Enregistrer</button></div></div></div>`;
- $("postitBody").focus();
+ postitPhotoDraft=note?.photo||'';
+ $("modalRoot").innerHTML=`<div class="modalbg"><div class="modal" style="height:auto;max-height:88dvh"><div class="modalHeader"><h3>${note?'Modifier le post-it':'Nouveau post-it'}</h3><button class="close" onclick="closeModal()">×</button></div><div class="field"><label>Titre (facultatif)</label><input id="postitTitle" value="${esc(note?.title||'')}"></div><div class="field"><label>Ta note</label><textarea id="postitBody" placeholder="Écris ici ou utilise le micro du clavier…">${esc(note?.body||'')}</textarea></div><div class="field"><label>Photo (facultatif)</label><input id="postitPhotoInput" type="file" accept="image/*" onchange="loadPostitPhoto(this)" style="width:100%"><div id="postitPhotoPreview" style="margin-top:10px"></div></div><p class="secretHint">Pour dicter sur iPhone ou iPad : touche la zone de texte, puis le micro du clavier. Appuie sur Enregistrer pour conserver ta note.</p><div class="field"><label>Couleur</label><select id="postitColor">${POSTIT_COLORS.map((color,index)=>`<option value="${color}" ${note?.color===color?'selected':''}>${['Jaune','Rose','Bleu','Vert','Violet'][index]}</option>`).join('')}</select></div><div class="modalFooter"><button class="btn" onclick="closeModal()">Annuler</button><button class="btn primary" onclick='savePostit(${JSON.stringify(id)})'>Enregistrer</button></div></div></div>`;
+ postitPhotoPreview();
 }
 function savePostit(id){
- const body=$("postitBody").value.trim(),title=$("postitTitle").value.trim();if(!body&&!title)return alert('Écris ou dicte une note.');
+ const body=$("postitBody").value.trim(),title=$("postitTitle").value.trim();if(!body&&!title&&!postitPhotoDraft)return alert('Écris une note ou ajoute une photo.');
  const previous=state.postits.find(n=>n.id===id);
- const note={...previous,id:previous?.id||String(Date.now()+Math.random()),title,body,color:$("postitColor").value,archived:previous?.archived||false,createdAt:previous?.createdAt||Date.now(),updatedAt:Date.now()};
- if(previous)state.postits=state.postits.map(n=>n.id===id?note:n);else state.postits.push(note);
- save();closeModal();renderPostits();renderHome();
+ const note={...previous,id:previous?.id||String(Date.now()+Math.random()),title,body,photo:postitPhotoDraft,color:$("postitColor").value,archived:previous?.archived||false,createdAt:previous?.createdAt||Date.now(),updatedAt:Date.now()};
+ const before=state.postits;
+ state.postits=previous?before.map(n=>n.id===id?note:n):[...before,note];
+ try{save()}catch(error){state.postits=before;alert('Stockage insuffisant pour cette photo. Essaie une autre image ou une photo plus petite. La note précédente est conservée.');return}
+ closeModal();renderPostits();renderHome();
 }
 function archivePostit(id,archived){
  const note=state.postits.find(n=>n.id===id);if(!note)return;
